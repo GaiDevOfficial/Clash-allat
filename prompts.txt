@@ -1,0 +1,169 @@
+We are doing a game dev challenge for a YouTube video: we need to create a game in 1 hour 30 minutes.
+
+Setup:
+* We work purely with HTML, CSS, JS, no frameworks, no libraries, no CDNs
+* Use plain <script> tags, no JS modules, so the game runs by opening index.html directly
+* Target: desktop first. Add touch controls only if it's a quick add or asked explicitly
+* You may create as many files for JS or CSS as appropriate
+* Listen to me, don't wander off, unless I explicitly tell you to brainstorm or let you figure it out
+* Don't add features, refactors, or polish I didn't ask for
+* Relatively quick turns should be the goal, meaning you do everything I ask for with full force, only do minimal verification, unless asked
+* Don't spawn subagents or open the browser unless I ask
+* If something is unclear, ask rather than go off
+* Code should be simple and well structured, it'll be shared with beginner / inspired people
+* Your replies should be as information dense as possible
+* After each change, give a short summary in this format:
+
+what changed: 1-2 sentences tldr (always include)
+anything worth flagging: 1-2 sentences tldr (only if something actually surfaced, otherwise omit this line)
+idea: 1-2 sentences tldr (only if you have one that would genuinely add to the game and I seem to be missing it, otherwise omit this line)
+
+Append every prompt (including this one) to a root "prompts.txt" file immediately, before doing the work. Only correct typos, no grammar fixes or rewording, so my audience can reproduce the steps.
+
+Also append each prompt, translated into Hungarian as faithfully as possible, to "prompts-hu.txt". Start that file with this disclaimer: "Ez a szöveg mesterséges intelligenciával, automatikusan lett fordítva."
+
+In the next turn I'll explain the game we'll be doing, and the timer will start.
+
+Reply "ready" when you are... well, ready.
+
+---
+
+Okay, today we are making a clash royale style card game, but with animals.
+I want you to make a 4 tab design: shop (currently empty), deck (only two card, I'll describe them later), battle and challenge (empty for now)
+The arenas are going to be environments, like farm, forest, desert and so on. First arena is farm. First card is chickens: 3 small fast units, melee and costs 3 feeds (elixir).
+Do the arena and the chickens.
+UI is in hungarian. Each animal should have a little preview of what they do. make a simple, immersive playful animal themed UI. Don't use emojis, use custom drawn icons.
+
+---
+
+Next card:
+tyúk: 1 units, mid strength, targets ground and air, and uses eggs to throw. 3 táp.
+kakas: 4 táp, high damage, melee, mid hp, it can jump "röppenni", and can deal 50% of ground damage it dealt on the ground
+
+Also, try to make them roughly balanced, even if i specify if it seems to be too strong.
+Arena and game ui is elongated, and the two towers should be a silo and the middle one is a barn
+
+---
+
+The ui has gaps not ideal. And it is low res
+
+---
+
+New cards: méhek: 6 bees for 4 táp, small, fast, air units. If it attacks you you get a some damage and a minimal poison damage for 5 seconds, The bee dies on impacts.
+
+For 3 táp you can get a beehive, 2 bees escape on impact, releases a bee every 4 seconds for 40 seconds, it has decaying health for that time, and it is a type of building.
+
+---
+
+Also, make the width of the game a bit larger.
+
+---
+
+Okay, I want you to add card rotation, you can only have 4 ever in your hand, and see the next upcoming.
+
+  And by releasing 2 bees i mean when the hive is destroyed.
+
+  Also chickens seem to sometimes get stuck on the bridge. I think you could make the map more "farmy", more beautiful. Hátralévő idő overflows. And still not wide enough.
+
+  Also add the following cards:
+  Tehén: targets buildings only, 4 táp, a lot of hp, mid damage
+  Bika: a little bit less hp than the tehén, a lot of damage + charge, and it targets everything but air.
+
+---
+
+Now the arena looks overwhelming
+
+---
+
+No need for the "Roham" and the bull looks funny
+And the cow too
+Not the simplistic cute design I'm aiming for with all the designs
+
+---
+
+Also, when they die they should poof into gray smoke not to be so gruesome
+
+---
+
+Add progression to the game, add chests (small farm chest, medium farm chest rarely large farm chests) after each victory you should get one. These should open in 5, 10 and 20 minutes. Save progression into a localstorage.
+You should be able to upgrade cards, first 5 cards 7 gold, and then continue that ratio up so at max you are at lvl 10.
+You should be able to max your cards with 10-15 hours of gameplay.
+Add rarities to the cards, the rooster for example should be epic, and the bika as well. Others are rare and common for now.
+You should get gold and card draws from the chests.
+The cards should not all animate all the time, only when I select one not to overload the UI. It should be like a 3 column design with cards
+The tab design is a bit messed up, when one is activated it looks buggy.
+
+Also two new cards:
+malac: 2 táp, fast, fast hit speed, small damage mid to low hp
+mangalica: 4 elixir, same speed, same fast hit speed, but mid hp and mid damage
+
+Add a deck builder (8 card in total).
+Fix the one eyed cow and bull designs.
+And the overwhelming arena that has everything in it.
+
+---
+
+We have 40 minutes left by the way.
+
+---
+
+You may spawn 2-3 Opus sub agents if it helps you speed up for this large batch. We have a lot of usage left
+
+---
+
+Add a load animation to the deck, the new card that I get should animate in the place of the old you used.
+
+---
+
+Liba: shoots eggs, it flies, move slow, and does a lot of damage, but has little hp.
+Róka: fast ground troop, does 35% extra damage on birds (when it can reach them), and small hp. small damage. 3 elixir.
+Nyúl: 2 táp, little hp, but it bounces, and does area damage on the ground, mid damage
+Ló: 7 táp, runs fast, a lot of hp, mid damage, only targets building, can jump over the river. Epic card
+4 táp kutya, has mid to low hp and low damage, but it roams around your territory (defensive card) for 40 seconds.
+3 táp kecske, jumps, when it lands, it does area damage in a cone forward and pushes back enemies, it attacks normal then again, and does the jump mechanic only when targets are far away.
+
+---
+
+Also the shop: i should get hourly rotation on 6 card, 3 of them should be my randomly from my deck cards, I should be able to use coins on the cards, to get more, also flat increase all gold sources by 20% and I should get some gold after a victory.
+The deck selector displays the deck in a horrendous way, it should be 8 slots clearly marked.
+
+---
+
+Bunny jumps should be larger
+
+---
+
+Rename kutya to őrkutya
+
+---
+
+The bunny should damage with the jumps, slower hit speed, and longer jumps longer uptime
+
+---
+
+Also, add arenas, like as a concept and add a new "forest" themed arena that's currently locked, but add ui so i can see it's locked, and add ui so i can see which card unlock from which arena. Chests are tied to arena, so i should see it as arena 1 chest, arena 2 chest and only arena 2 chests can unlock cards from later arena. The second arena unlocks at 250 trophies you win about 30 and lose 10 right now.
+
+And new cards:
+kukorica eső, it's a spell, against swarm, sort of like the arrows in clash royale 3 táp
+szalmabála: a strong smaller area spell for 4 táp, kills or damages most mid tier troop heavily. Does pushback
+sárgolyó: 3 táp, smaller area then kukorica, larger than szalmabála and it slows enemies for 5 seconds by 50%, and it does pushback
+Búzaföld: 5 táp, gives you back 6.5 if it produces back everything, gives you 0.5 táp on destruction and produces 1 táp every 3 seconds for 18 seconds
+Also, when a tower is destroyed the deploy area should be larger for the enemy. And enemies should get a random roll of 8 card when in the arena. Also, you should start by only having 8 cards in your starter deck and unlock new ones later. For now, with a flag unlock everything for me, when I say its the last command you should then disable this behaviours
+
+---
+
+The "what you find in the arena" should be a ui that comes up when i click on the arena, and there a scrollable UI should show the arenas that there are
+
+---
+
+I should be able to buy chests with gold, but these should be card chests only, and be at a better chance wise value then buying directly the cards i want.
+I should be able to refresh the shop for 5, 10, 20 etc gold, resets at the hourly refresh.
+The barn should also attack larger area, little less damage but only when at least one tower is destroyed or the barn received damage (like from a spell or a stray animal that got led to the barn).
+Also customize the scroll bar's look.
+Do a final sweep, clean up if anything needs cleaning up, test the game, and do a final re balancing to everything make sense in the arena and in the economy.
+And last thing: i want you to hash every channel members youtube id (you can actually call the yt api to get it) and put in a custom challenge for every member name you have, and make it searchable and appear in random order (optimize it to only randomize like every hour or so), and make it easy to search with yt name.
+You should hash their yt name, and make it a unique challenge, your and the enemies deck is randomly selected, based on the hash numbers, and also, you can randomly get a modifier, 30% don't get and then equally distributed: 2x táp (you get 2x táp from the start, and in a normal match you should only get a 2x táp at the last minute), sudden death (the first to take the tower wins), chicken mayhem (a chicken spawns on your and the enemies back lines every 20 seconds), bee mayhem its the same but every 10 seconds a bee, and corn rain: randomly on the map you show where corn rain will hit and you deploy a corn rain spell there that damages both player troops (not tower though)
+
+---
+
+Also, erdő aréna should have no card yet, as per I laid it out, and only all the cards we have so far should be in farm. We'll do that next

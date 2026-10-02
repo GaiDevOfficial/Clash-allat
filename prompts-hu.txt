@@ -1,0 +1,171 @@
+Ez a szöveg mesterséges intelligenciával, automatikusan lett fordítva.
+
+Egy játékfejlesztési kihívást csinálunk egy YouTube-videóhoz: 1 óra 30 perc alatt kell elkészítenünk egy játékot.
+
+Beállítások:
+* Kizárólag HTML-lel, CSS-sel és JS-sel dolgozunk, keretrendszerek, könyvtárak és CDN-ek nélkül
+* Sima <script> tageket használj, JS modulokat ne, hogy a játék az index.html közvetlen megnyitásával fusson
+* Cél: elsősorban asztali gép. Érintéses vezérlést csak akkor adj hozzá, ha gyorsan megoldható, vagy ha kifejezetten kérem
+* Annyi JS- vagy CSS-fájlt hozhatsz létre, amennyi indokolt
+* Hallgass rám, ne kalandozz el, hacsak kifejezetten nem mondom, hogy ötletelj, vagy hogy találd ki magad
+* Ne adj hozzá olyan funkciókat, refaktorálást vagy csinosítást, amit nem kértem
+* A cél a viszonylag gyors körök, vagyis mindent, amit kérek, teljes erővel csinálj meg, és csak minimális ellenőrzést végezz, hacsak nem kérem másképp
+* Ne indíts subagenteket, és ne nyisd meg a böngészőt, hacsak nem kérem
+* Ha valami nem világos, inkább kérdezz, mint hogy elindulj valamerre
+* A kód legyen egyszerű és jól strukturált, kezdőkkel / inspirált emberekkel lesz megosztva
+* A válaszaid legyenek a lehető legtömörebbek információban
+* Minden változtatás után adj egy rövid összefoglalót ebben a formátumban:
+
+mi változott: 1-2 mondatos tldr (mindig szerepeljen)
+amit érdemes jelezni: 1-2 mondatos tldr (csak ha tényleg felmerült valami, egyébként hagyd ki ezt a sort)
+ötlet: 1-2 mondatos tldr (csak ha van olyan ötleted, ami tényleg hozzáadna a játékhoz, és úgy tűnik, nekem nem jutott eszembe, egyébként hagyd ki ezt a sort)
+
+Minden promptot (ezt is beleértve) azonnal, a munka elvégzése előtt fűzz hozzá egy gyökérkönyvtárbeli "prompts.txt" fájlhoz. Csak az elírásokat javítsd, nyelvtani javítást vagy átfogalmazást ne, hogy a közönségem reprodukálni tudja a lépéseket.
+
+Továbbá minden promptot fűzz hozzá, a lehető leghűebben magyarra fordítva, a "prompts-hu.txt" fájlhoz. Ezt a fájlt ezzel a figyelmeztetéssel kezdd: "Ez a szöveg mesterséges intelligenciával, automatikusan lett fordítva."
+
+A következő körben elmagyarázom, milyen játékot fogunk csinálni, és elindul az időzítő.
+
+Válaszolj "ready"-vel, ha készen állsz... nos, készen.
+
+---
+
+Oké, ma egy Clash Royale stílusú kártyajátékot csinálunk, de állatokkal.
+Egy 4 füles felépítést szeretnék: bolt (egyelőre üres), pakli (csak két kártya, ezeket később leírom), csata és kihívás (egyelőre üres)
+Az arénák környezetek lesznek, például farm, erdő, sivatag és így tovább. Az első aréna a farm. Az első kártya a csirkék: 3 kicsi, gyors egység, közelharci, és 3 takarmányba (elixír) kerül.
+Csináld meg az arénát és a csirkéket.
+A felhasználói felület magyar nyelvű. Minden állatnak legyen egy kis előnézete arról, hogy mit csinál. Csinálj egy egyszerű, magával ragadó, játékos, állatos témájú felületet. Ne használj emojikat, használj egyedi rajzolt ikonokat.
+
+---
+
+Következő kártya:
+tyúk: 1 egység, közepes erősségű, földi és légi célpontokat is támad, és tojásokat dobál. 3 táp.
+kakas: 4 táp, nagy sebzés, közelharci, közepes életerő, tud ugrani, "röppenni", és a földön okozott sebzésének 50%-át tudja okozni
+
+Továbbá próbáld őket nagyjából kiegyensúlyozottá tenni, még akkor is, ha én adom meg, ha túl erősnek tűnik.
+Az aréna és a játék felülete megnyúlt, és a két torony legyen siló, a középső pedig egy pajta
+
+---
+
+A felületen hézagok vannak, nem ideális. És alacsony a felbontása
+
+---
+
+Új kártyák: méhek: 6 méh 4 tápért, kicsik, gyorsak, légi egységek. Ha megtámad téged, kapsz egy kis sebzést és egy minimális mérgezési sebzést 5 másodpercig. A méh becsapódáskor elpusztul.
+
+3 tápért kaphatsz egy méhkaptárt, becsapódáskor 2 méh szabadul ki, 40 másodpercen át 4 másodpercenként kienged egy méhet, ez idő alatt az életereje folyamatosan fogy, és egyfajta épület.
+
+---
+
+Továbbá tedd egy kicsit szélesebbé a játékot.
+
+---
+
+Oké, szeretném, ha hozzáadnád a kártyarotációt, egyszerre mindig csak 4 lehet a kezedben, és látni lehessen a következő, soron lévőt.
+
+  A 2 méh kiengedésén pedig azt értem, amikor a kaptár elpusztul.
+
+  Továbbá úgy tűnik, a csirkék néha beragadnak a hídon. Szerintem a pályát lehetne "farmosabbá", szebbé tenni. A "Hátralévő idő" kilóg. És még mindig nem elég széles.
+
+  Továbbá add hozzá a következő kártyákat:
+  Tehén: csak épületeket támad, 4 táp, sok életerő, közepes sebzés
+  Bika: egy kicsit kevesebb életerő, mint a tehénnek, nagy sebzés + roham, és mindent támad, kivéve a légi egységeket.
+
+---
+
+Most az aréna túl zsúfoltnak tűnik
+
+---
+
+Nem kell a "Roham", és a bika viccesen néz ki
+És a tehén is
+Nem az az egyszerű, aranyos dizájn, amire az összes dizájnnál törekszem
+
+---
+
+Továbbá, amikor meghalnak, szürke füstté kellene válniuk egy puffanással, hogy ne legyen olyan hátborzongató
+
+---
+
+Adj fejlődést a játékhoz, adj hozzá ládákat (kis farmláda, közepes farmláda, ritkán nagy farmláda), minden győzelem után kapnod kellene egyet. Ezek 5, 10 és 20 perc alatt nyíljanak ki. A fejlődést mentsd el a localstorage-be.
+Lehessen fejleszteni a kártyákat, az első 5 kártya 7 arany, és utána ezt az arányt folytasd felfelé, hogy a maximumon 10-es szinten legyél.
+10-15 óra játékkal lehessen maxolni a kártyáidat.
+Adj ritkaságokat a kártyákhoz, a kakas például legyen epikus, és a bika is. A többiek egyelőre ritkák és gyakoriak.
+A ládákból aranyat és kártyahúzásokat kellene kapnod.
+Ne animáljon folyamatosan az összes kártya, csak amikor kiválasztok egyet, hogy ne terhelje túl a felületet. Olyan 3 oszlopos elrendezés legyen kártyákkal.
+A fülek dizájnja kicsit el van rontva, amikor az egyik aktív, hibásnak tűnik.
+
+Továbbá két új kártya:
+malac: 2 táp, gyors, gyors ütési sebesség, kis sebzés, közepes-alacsony életerő
+mangalica: 4 elixír, ugyanolyan sebesség, ugyanolyan gyors ütési sebesség, de közepes életerő és közepes sebzés
+
+Adj hozzá egy pakliépítőt (összesen 8 kártya).
+Javítsd ki az egyszemű tehén és bika dizájnokat.
+És a túlzsúfolt arénát, amiben minden benne van.
+
+---
+
+Egyébként 40 percünk maradt.
+
+---
+
+Indíthatsz 2-3 Opus subagentet, ha segít felgyorsítani ezt a nagy adagot. Bőven van még keretünk
+
+---
+
+Adj egy betöltési animációt a paklihoz, az új kártya, amit kapok, animálva érkezzen a régi helyére, amit felhasználtál.
+
+---
+
+Liba: tojásokat lő, repül, lassan mozog, és nagyot sebez, de kevés az életereje.
+Róka: gyors földi egység, 35%-kal többet sebez a madarakra (ha eléri őket), és kevés az életereje. Kis sebzés. 3 elixír.
+Nyúl: 2 táp, kevés életerő, de ugrál, és területi sebzést okoz a földön, közepes sebzés
+Ló: 7 táp, gyorsan fut, sok életerő, közepes sebzés, csak épületeket támad, át tud ugrani a folyón. Epikus kártya
+4 táp kutya, közepes-alacsony életerő és alacsony sebzés, de 40 másodpercig járőrözik a saját területeden (védekező kártya).
+3 táp kecske, ugrik, amikor földet ér, egy előre irányuló kúpban területi sebzést okoz és hátralöki az ellenfeleket, utána normálisan támad, és az ugrás mechanikát csak akkor használja, ha a célpontok messze vannak.
+
+---
+
+Továbbá a bolt: óránként cserélődjön benne 6 kártya, ebből 3 véletlenszerűen a paklim kártyái közül legyen, és érmékkel tudjak venni a kártyákból, hogy több legyen. Továbbá minden aranyforrást emelj meg egységesen 20%-kal, és győzelem után is kapjak valamennyi aranyat.
+A pakliválasztó borzasztóan jeleníti meg a paklit, 8 jól elkülönített hely legyen.
+
+---
+
+A nyúl ugrásai legyenek nagyobbak
+
+---
+
+Nevezd át a kutyát őrkutyára
+
+---
+
+A nyúl az ugrásaival sebezzen, lassabb ütési sebességgel, és hosszabb ugrásokkal, hosszabb levegőben töltött idővel
+
+---
+
+Továbbá adj hozzá arénákat, mint koncepciót, és adj hozzá egy új, "erdő" témájú arénát, ami egyelőre zárolva van, de legyen hozzá felület, hogy lássam, hogy zárolva van, és legyen felület, amin látom, melyik kártya melyik arénából oldható fel. A ládák arénához kötöttek, tehát 1. arénás ládaként, 2. arénás ládaként kell látnom őket, és csak a 2. arénás ládákból lehet későbbi arénák kártyáit feloldani. A második aréna 250 trófeánál nyílik meg, most nagyjából 30-at nyersz és 10-et veszítesz.
+
+És új kártyák:
+kukoricaeső, ez egy varázslat, rajok ellen, olyasmi, mint a nyilak a Clash Royale-ban, 3 táp
+szalmabála: erős, kisebb területű varázslat 4 tápért, a legtöbb közepes egységet megöli vagy súlyosan megsebzi. Hátralök
+sárgolyó: 3 táp, kisebb terület, mint a kukoricáé, nagyobb, mint a szalmabáláé, és 5 másodpercre 50%-kal lelassítja az ellenfeleket, és hátralök
+Búzaföld: 5 táp, 6,5-öt ad vissza, ha mindent megtermel, 0,5 tápot ad, amikor elpusztul, és 18 másodpercen át 3 másodpercenként 1 tápot termel
+Továbbá, amikor egy torony elpusztul, a lerakási terület legyen nagyobb az ellenfél számára. És az ellenfelek kapjanak véletlenszerűen 8 kártyát, amikor az arénában vannak. Továbbá kezdetben csak 8 kártyád legyen a kezdőpaklidban, és az újakat később oldd fel. Egyelőre egy kapcsolóval oldj fel nekem mindent, és amikor azt mondom, hogy ez az utolsó parancs, akkor kapcsold ki ezt a viselkedést
+
+---
+
+A "mit találsz az arénában" rész legyen egy felület, ami akkor jön fel, amikor az arénára kattintok, és ott egy görgethető felület mutassa meg az összes arénát, ami létezik
+
+---
+
+Lehessen aranyért ládákat venni, de ezek csak kártyaládák legyenek, és esélyek szerint jobban megérjenek, mint ha közvetlenül venném meg a kívánt kártyákat.
+Lehessen frissíteni a boltot 5, 10, 20 stb. aranyért, ez az óránkénti frissítéskor nullázódik.
+A pajta is támadjon nagyobb területre, kicsit kisebb sebzéssel, de csak akkor, ha legalább egy torony elpusztult, vagy a pajta sebzést kapott (például egy varázslattól vagy egy eltévedt állattól, ami a pajtához jutott).
+Továbbá szabd testre a görgetősáv kinézetét.
+Csinálj egy végső átnézést, takaríts ki mindent, amit kell, teszteld a játékot, és csinálj egy végső kiegyensúlyozást, hogy minden értelmes legyen az arénában és a gazdaságban.
+És az utolsó dolog: hasheld le minden csatornatag YouTube-azonosítóját (a YT API-t meg is tudod hívni, hogy megszerezd), és minden tagnévhez, ami megvan, tegyél be egy egyedi kihívást, legyen kereshető, és véletlenszerű sorrendben jelenjen meg (optimalizáld úgy, hogy csak nagyjából óránként keveredjen újra), és legyen könnyű rákeresni a YT névre.
+A YT nevüket hasheld le, és legyen belőle egy egyedi kihívás: a te és az ellenfél paklija véletlenszerűen legyen kiválasztva a hash számai alapján, és ezen felül véletlenszerűen kaphatsz egy módosítót: 30% eséllyel nem kapsz, a többi egyenlően oszlik el: 2x táp (a kezdettől 2x tápot kapsz, egy normál meccsen pedig csak az utolsó percben legyen 2x táp), hirtelen halál (aki először bevesz egy tornyot, nyer), csirkekáosz (20 másodpercenként egy csirke jelenik meg a te és az ellenfél hátsó sorában), méhkáosz, ugyanez, de 10 másodpercenként egy méh, és kukoricaeső: a pályán véletlenszerűen megmutatod, hova fog csapódni a kukoricaeső, és oda lesz egy kukoricaeső varázslat, ami mindkét játékos egységeit sebzi (a tornyokat viszont nem)
+
+---
+
+Továbbá az erdő arénában még ne legyen kártya, ahogy felvázoltam, és az eddigi összes kártya csak a farmon legyen. Ezt fogjuk következőnek csinálni

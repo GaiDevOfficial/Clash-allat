@@ -1,0 +1,126 @@
+/* ---------- Shop (Bolt) ----------
+   The offer tiles reuse .card-grid and .card-tile from style.css,
+   so they look like the cards on the deck page. */
+
+/* Row under the title: the timer sign and the "Frissítés" button side by side
+   (on a very narrow screen the button wraps under the sign) */
+.shop-timer-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin-top: -4px;
+}
+
+/* "Új ajánlatok: 23:41" wooden sign under the title */
+.shop-timer {
+  width: fit-content;
+  margin: 0;
+  padding: 4px 14px;
+  background: var(--wood);
+  color: var(--cream);
+  border: 3px solid var(--wood-dark);
+  border-radius: 14px;
+  box-shadow: 0 3px 0 var(--wood-dark);
+  font-size: 15px;
+  font-weight: bold;
+  text-shadow: 1px 1px 0 var(--wood-dark);
+}
+.shop-timer b {
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;   /* the digits don't jump around while counting */
+}
+
+/* Extra room on top for the "A paklidban" markers */
+.shop-grid { margin-top: 24px; row-gap: 22px; }
+
+.shop-offer { padding: 12px 6px 8px; }
+.shop-offer:hover { transform: none; }   /* only the button is clickable, the tile stays still */
+
+.shop-amount {
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #3f9a2a;
+}
+
+/* Small green tag sitting on the top border of deck cards */
+.shop-in-deck {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 8px;
+  white-space: nowrap;
+  background: var(--grass-dark);
+  color: var(--cream);
+  border: 2px solid var(--wood-dark);
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+/* Buy button: a smaller .action-btn that fills the tile width */
+.shop-buy {
+  flex: none;
+  width: 100%;
+  margin-top: auto;   /* pushes the button to the bottom, so all buttons line up */
+  padding: 5px 4px;
+  font-size: 16px;
+  box-shadow: 0 3px 0 var(--wood-dark);
+}
+.shop-buy .icon { width: 20px; height: 20px; }
+.shop-buy:not(:disabled):active { transform: translateY(3px); box-shadow: 0 0 0 var(--wood-dark); }
+
+/* Already bought in this rotation: faded tile and a flat "Megvéve" label */
+.shop-offer.bought { background: #eadcb8; }
+.shop-offer.bought canvas { opacity: 0.45; }
+.shop-buy.is-bought:disabled {
+  filter: none;
+  opacity: 1;
+  background: #c9b99a;
+  color: var(--wood-dark);
+  text-shadow: none;
+  box-shadow: none;
+}
+
+/* "Frissítés (gold) 5" button next to the timer: an orange .action-btn,
+   about as tall as the wooden timer sign. When you can't afford it,
+   .action-btn:disabled (style.css) makes it grey and faded. */
+.shop-refresh {
+  flex: none;
+  padding: 4px 12px;
+  font-size: 15px;
+  border-radius: 14px;
+  background: linear-gradient(#ffb03a, #e8791f);
+  box-shadow: 0 3px 0 var(--wood-dark);
+}
+.shop-refresh .icon { width: 18px; height: 18px; margin-left: 4px; }
+.shop-refresh:not(:disabled):active { transform: translateY(3px); box-shadow: 0 0 0 var(--wood-dark); }
+
+/* ---------- Card chests (Kártyaládák) ----------
+   The heading reuses .chest-title from the lobby ("Ládák"). */
+.shop-chest-hint {
+  margin: -6px 0 12px;
+  text-align: center;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+/* Chest tiles: same wooden card look, with a warm golden background */
+.shop-chest {
+  padding: 10px 6px 8px;
+  background: linear-gradient(#fff1b8, var(--cream));
+  border-color: var(--wood);
+}
+.shop-chest:hover { transform: none; }   /* only the button is clickable */
+
+.shop-chest-icon { width: 64px; height: 64px; }
+
+.shop-chest-name {
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1.15;
+  text-align: center;
+}
