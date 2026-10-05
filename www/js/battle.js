@@ -969,6 +969,14 @@ function endBattle() {
   }
   if (highestArena() > arenaBefore) chestInfo.innerHTML += `<span class="new-arena">Új aréna: ${ARENAS[highestArena() - 1].name}!</span>`;
   applyIcons(chestInfo);
+
+  if (typeof isMultiplayerMatch !== 'undefined' && isMultiplayerMatch && typeof notifyMultiplayerBattleEnd === 'function') {
+    notifyMultiplayerBattleEnd(p, e);
+  }
+  if (typeof updatePlayerCupsUI === 'function') {
+    updatePlayerCupsUI();
+  }
+
   document.getElementById('result').classList.remove('hidden');
 }
 

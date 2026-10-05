@@ -203,6 +203,7 @@ function closeBattle() {
   stopBattle();
   document.getElementById('battle-screen').classList.add('hidden');
   updateGold();
+  if (typeof updatePlayerCupsUI === 'function') updatePlayerCupsUI();
   showTab(fromChallenge ? 'challenge' : 'battle');
 }
 

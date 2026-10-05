@@ -63,6 +63,14 @@ function loadSave() {
       ['chickens', 'rooster', 'bull', 'horse', 'snake', 'frog', 'cheetah', 'cornRain']
     ];
     s.activeDeckIndex = 0;
+  if (!s.playerId) {
+    s.playerId = 'player_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+  }
+  if (!s.playerName) {
+    s.playerName = 'Harcos';
+  }
+  if (s.trophies === undefined || s.trophies === null || isNaN(s.trophies)) {
+    s.trophies = 0;
   }
   if (!s.bundlesBought) s.bundlesBought = {};
   // Every card gets an entry, also cards added in a later version of the game

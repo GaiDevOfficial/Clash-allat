@@ -64,16 +64,89 @@
           <div id="arena-progress" class="arena-progress"></div>
         </div>
         <button id="btn-fight" class="big-btn">Gyakorló Csata (Bot ellen)</button>
-        <div class="mp-lobby-row">
-          <button id="btn-mp-host" class="big-btn mp-lobby-btn"><span class="icon" data-icon="battle"></span> Szoba Nyitás (Host)</button>
-          <button id="btn-mp-join" class="big-btn mp-lobby-btn join"><span class="icon" data-icon="users"></span> Csatlakozás (Kód)</button>
-        </div>
-        <div class="mp-server-bar">
-          <div class="mp-server-status-wrap">
-            <span id="mp-status-indicator" class="status-dot connecting"></span>
-            <span id="mp-status-text">Csatlakozás szerverhez...</span>
+        <!-- MULTIPLAYER SECTION WITH MODE SWITCH -->
+        <div class="mp-mode-section">
+          <!-- Mode Switch Toggle -->
+          <div class="mp-mode-toggle" id="mp-mode-toggle">
+            <button type="button" class="mp-toggle-btn active" id="btn-toggle-quick" data-mode="quick">
+              <span class="icon" data-icon="search"></span> 🔍 Gyors Meccs
+            </button>
+            <button type="button" class="mp-toggle-btn" id="btn-toggle-code" data-mode="code">
+              <span class="icon" data-icon="lock"></span> 🔑 Kódos Szoba
+            </button>
           </div>
-          <button id="btn-mp-server-cfg" class="mp-cfg-btn" title="Szerver cím beállítása">⚙️ Szerver</button>
+
+          <!-- PANEL 1: Quick Match (Search Mode) -->
+          <div class="mp-panel" id="mp-panel-quick">
+            <div class="mp-profile-summary">
+              <div class="mp-cups-badge">
+                <span class="icon" data-icon="trophy"></span>
+                <span class="mp-cups-val" id="mp-player-cups">0</span>
+                <span class="mp-cups-lbl">Kupa</span>
+              </div>
+              <div class="mp-status-pill" id="mp-quick-status-pill">
+                <span class="status-dot connecting" id="mp-quick-dot"></span>
+                <span id="mp-quick-status-txt">Szerver kapcsolat...</span>
+              </div>
+            </div>
+
+            <!-- Idle state: Find Match button -->
+            <div id="mp-search-idle" class="mp-search-view">
+              <button id="btn-find-match" class="big-btn mp-search-btn">
+                <span class="icon" data-icon="battle"></span>
+                <span>🎮 Meccs Keresése</span>
+              </button>
+              <div class="mp-search-hint">Párosítás hasonló kupa szerint (vagy azonnali meccs 2 játékos esetén)</div>
+            </div>
+
+            <!-- Searching state: Radar pulse & Timer -->
+            <div id="mp-search-active" class="mp-search-view hidden">
+              <div class="mp-radar-wrap">
+                <div class="mp-radar-ring ring-1"></div>
+                <div class="mp-radar-ring ring-2"></div>
+                <div class="mp-radar-icon">🐾</div>
+              </div>
+              <div class="mp-search-title">🔍 Ellenfél keresése...</div>
+              <div class="mp-search-timer" id="mp-search-timer">00:00</div>
+              <div class="mp-search-sub" id="mp-search-queue-info">Várakozás a szerveren...</div>
+              <button id="btn-cancel-search" class="action-btn cancel mp-cancel-btn">❌ Mégse</button>
+            </div>
+
+            <!-- Found Opponent Overlay / Banner -->
+            <div id="mp-match-found-banner" class="mp-match-found-banner hidden">
+              <div class="mp-found-badge">⚔️ ELLENFÉL MEGTALÁLVA!</div>
+              <div class="mp-found-players">
+                <div class="mp-player-card my-card">
+                  <span class="name" id="mp-found-my-name">Te</span>
+                  <span class="cups" id="mp-found-my-cups">🏆 0</span>
+                </div>
+                <div class="mp-vs-badge">VS</div>
+                <div class="mp-player-card opp-card">
+                  <span class="name" id="mp-found-opp-name">Ellenfél</span>
+                  <span class="cups" id="mp-found-opp-cups">🏆 0</span>
+                </div>
+              </div>
+              <div class="mp-countdown" id="mp-found-countdown">Indulás 3 másodperc...</div>
+            </div>
+          </div>
+
+          <!-- PANEL 2: Private Room with Code -->
+          <div class="mp-panel hidden" id="mp-panel-code">
+            <div class="mp-lobby-row">
+              <button id="btn-mp-host" class="big-btn mp-lobby-btn"><span class="icon" data-icon="battle"></span> Szoba Nyitás</button>
+              <button id="btn-mp-join" class="big-btn mp-lobby-btn join"><span class="icon" data-icon="users"></span> Csatlakozás</button>
+            </div>
+            <div class="mp-code-hint">Játssz közvetlenül barátoddal egy 4 jegyű szobakóddal!</div>
+          </div>
+
+          <!-- Server connection bar -->
+          <div class="mp-server-bar">
+            <div class="mp-server-status-wrap">
+              <span id="mp-status-indicator" class="status-dot connecting"></span>
+              <span id="mp-status-text">Csatlakozás szerverhez...</span>
+            </div>
+            <button id="btn-mp-server-cfg" class="mp-cfg-btn" title="Szerver cím beállítása">⚙️ Szerver</button>
+          </div>
         </div>
         <h3 class="chest-title">Ládák</h3>
         <div id="chest-slots" class="chest-slots"></div>

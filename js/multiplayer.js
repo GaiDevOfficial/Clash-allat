@@ -1,10 +1,18 @@
-// Real-time WebSocket Multiplayer client with 4-Digit Room Code support
+// Real-time WebSocket Multiplayer client
+// Features:
+// 1. Switch between Quick Match (Matchmaking Search) and Private Room (4-Digit Code)
+// 2. Cups-based matchmaking (similar cups paired, or instant match if 2 players on server)
+// 3. Persistent cup progress (stored in localStorage & synced with server)
+
 let mpSocket = null;
 let currentRoomCode = null;
 let mpRole = null;          // 'host' or 'guest'
 let isMultiplayerMatch = false;
+let isSearchingMatch = false;
+let searchTimerInterval = null;
+let searchSeconds = 0;
 
-// Smart Server URL resolution for both Web and Android Native APK
+// Smart Server URL resolution for Web and Android Native APK
 function getMultiplayerServerUrl() {
   const customUrl = localStorage.getItem('animal_clash_server_url');
   if (customUrl && customUrl.trim()) {
@@ -17,7 +25,7 @@ function getMultiplayerServerUrl() {
     return url;
   }
 
-  // Detect Android APK (Capacitor/Cordova/file protocol or empty host)
+  // Detect Android Native APK (Capacitor/Cordova/file protocol or empty host)
   const isApk = (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
                 window.location.protocol === 'capacitor:' ||
                 window.location.protocol === 'file:' ||
@@ -25,7 +33,6 @@ function getMultiplayerServerUrl() {
                 window.location.host === 'localhost';
 
   if (isApk && window.location.protocol !== 'http:' && window.location.protocol !== 'https:') {
-    // In Android APK, automatically connect to cloud backend
     return 'wss://allati-arena.onrender.com';
   }
 
@@ -38,10 +45,20 @@ function getMultiplayerServerUrl() {
 function updateServerStatusUI(status, msg) {
   const dot = document.getElementById('mp-status-indicator');
   const text = document.getElementById('mp-status-text');
-  if (!dot || !text) return;
+  const quickDot = document.getElementById('mp-quick-dot');
+  const quickText = document.getElementById('mp-quick-status-txt');
 
-  dot.className = `status-dot ${status}`;
-  text.textContent = msg;
+  if (dot) dot.className = `status-dot ${status}`;
+  if (text) text.textContent = msg;
+  if (quickDot) quickDot.className = `status-dot ${status}`;
+  if (quickText) quickText.textContent = msg;
+}
+
+function updatePlayerCupsUI() {
+  const cupsEl = document.getElementById('mp-player-cups');
+  if (cupsEl && typeof save !== 'undefined') {
+    cupsEl.textContent = save.trophies || 0;
+  }
 }
 
 let mpReconnectTimer = null;
@@ -70,6 +87,8 @@ function initMultiplayerSocket() {
       clearTimeout(mpReconnectTimer);
       mpReconnectTimer = null;
     }
+    // Update player cups in UI
+    updatePlayerCupsUI();
   };
 
   mpSocket.onmessage = (event) => {
@@ -84,6 +103,9 @@ function initMultiplayerSocket() {
   mpSocket.onclose = () => {
     console.log('Disconnected from multiplayer server.');
     updateServerStatusUI('offline', '🔴 Nincs kapcsolat');
+    if (isSearchingMatch) {
+      cancelQuickMatchSearch(false);
+    }
     scheduleMpReconnect();
   };
 
@@ -105,6 +127,69 @@ function scheduleMpReconnect() {
 
 function handleServerMessage(data) {
   switch (data.type) {
+    // --- MATCHMAKING STATUS ---
+    case 'search_status': {
+      const infoEl = document.getElementById('mp-search-queue-info');
+      if (infoEl) {
+        if (data.searchingCount <= 1) {
+          infoEl.textContent = 'Várakozás ellenfélre a szerveren... (1 várakozik)';
+        } else {
+          infoEl.textContent = `Hasonló kupaérték keresése... (${data.searchingCount} játékos sorban)`;
+        }
+      }
+      break;
+    }
+
+    case 'search_canceled': {
+      resetSearchUI();
+      break;
+    }
+
+    // --- MATCH FOUND / START ---
+    case 'match_start': {
+      currentRoomCode = data.code;
+      mpRole = data.role;
+      closeMultiplayerModals();
+
+      if (isSearchingMatch || data.isMatchmaking) {
+        // Show Match Found Banner with animation
+        showMatchFoundBanner(data);
+      } else {
+        // Direct room start
+        startMultiplayerBattle({
+          role: mpRole,
+          code: data.code,
+          opponentName: data.opponentName,
+          opponentCups: data.opponentCups,
+          opponentDeck: data.opponentDeck,
+          arena: data.arena || 1
+        });
+      }
+      break;
+    }
+
+    // --- PROGRESS / CUPS UPDATE ---
+    case 'cups_updated': {
+      if (typeof save !== 'undefined' && data.newCups !== undefined) {
+        save.trophies = data.newCups;
+        if (typeof saveGame === 'function') saveGame();
+        updatePlayerCupsUI();
+
+        // Update result dialog if visible
+        const chestInfo = document.getElementById('result-chest');
+        if (chestInfo && data.delta !== undefined) {
+          const sign = data.delta > 0 ? '+' : '';
+          const color = data.delta > 0 ? '#2ed573' : (data.delta < 0 ? '#ff4757' : '#ffd23f');
+          const cupBadge = `<div style="margin-top:8px; font-size:16px; font-weight:800; color:${color};">
+            🏆 Rangsorolt Kupa: ${sign}${data.delta} (Összesen: ${data.newCups})
+          </div>`;
+          chestInfo.innerHTML += cupBadge;
+        }
+      }
+      break;
+    }
+
+    // --- PRIVATE ROOM HOST ---
     case 'room_created': {
       currentRoomCode = data.code;
       mpRole = 'host';
@@ -113,29 +198,18 @@ function handleServerMessage(data) {
     }
 
     case 'join_error': {
-      alert(data.message || 'Could not join room.');
+      alert(data.message || 'Nem sikerült csatlakozni a szobához.');
       const joinBtn = document.getElementById('btn-mp-join-submit');
-      if (joinBtn) joinBtn.disabled = false;
+      if (joinBtn) {
+        joinBtn.disabled = false;
+        joinBtn.textContent = 'Csatlakozás & Csata!';
+      }
       break;
     }
 
-    case 'match_start': {
-      currentRoomCode = data.code;
-      mpRole = data.role;
-      closeMultiplayerModals();
-      startMultiplayerBattle({
-        role: mpRole,
-        code: data.code,
-        opponentName: data.opponentName,
-        opponentDeck: data.opponentDeck,
-        arena: data.arena || 1
-      });
-      break;
-    }
-
+    // --- GAMEPLAY SYNCHRONIZATION ---
     case 'opponent_deploy': {
       if (!battle || !isMultiplayerMatch) return;
-      // Mirror deploy position from opponent's perspective
       const mirroredX = ARENA.W - data.x;
       const mirroredY = ARENA.H - data.y;
       playCard(data.cardId, ENEMY, mirroredX, mirroredY);
@@ -144,7 +218,7 @@ function handleServerMessage(data) {
 
     case 'opponent_disconnected': {
       if (battle && isMultiplayerMatch) {
-        alert('Opponent disconnected! Victory by forfeit.');
+        alert('Az ellenfél kilépett vagy megszakadt a kapcsolata! Győzelem feladás miatt.');
         battle.crowns.player = 3;
         endBattle();
       }
@@ -160,12 +234,166 @@ function handleServerMessage(data) {
   }
 }
 
+// ---------- MODE SWITCH TOGGLE ----------
+function switchMultiplayerMode(mode) {
+  const btnQuick = document.getElementById('btn-toggle-quick');
+  const btnCode = document.getElementById('btn-toggle-code');
+  const panelQuick = document.getElementById('mp-panel-quick');
+  const panelCode = document.getElementById('mp-panel-code');
+
+  if (mode === 'code') {
+    if (btnCode) btnCode.classList.add('active');
+    if (btnQuick) btnQuick.classList.remove('active');
+    if (panelCode) panelCode.classList.remove('hidden');
+    if (panelQuick) panelQuick.classList.add('hidden');
+    localStorage.setItem('animal_clash_mp_mode', 'code');
+    // If we were searching in quick mode, cancel it
+    if (isSearchingMatch) cancelQuickMatchSearch(true);
+  } else {
+    if (btnQuick) btnQuick.classList.add('active');
+    if (btnCode) btnCode.classList.remove('active');
+    if (panelQuick) panelQuick.classList.remove('hidden');
+    if (panelCode) panelCode.classList.add('hidden');
+    localStorage.setItem('animal_clash_mp_mode', 'quick');
+  }
+}
+
+// ---------- QUICK MATCH SEARCH LOGIC ----------
+function startQuickMatchSearch() {
+  initMultiplayerSocket();
+  isSearchingMatch = true;
+  searchSeconds = 0;
+
+  const idleView = document.getElementById('mp-search-idle');
+  const activeView = document.getElementById('mp-search-active');
+  const banner = document.getElementById('mp-match-found-banner');
+  const timerEl = document.getElementById('mp-search-timer');
+  const queueInfo = document.getElementById('mp-search-queue-info');
+
+  if (idleView) idleView.classList.add('hidden');
+  if (banner) banner.classList.add('hidden');
+  if (activeView) activeView.classList.remove('hidden');
+  if (timerEl) timerEl.textContent = '00:00';
+  if (queueInfo) queueInfo.textContent = 'Kapcsolódás a meccskeresőhöz...';
+
+  // Start search timer
+  if (searchTimerInterval) clearInterval(searchTimerInterval);
+  searchTimerInterval = setInterval(() => {
+    searchSeconds++;
+    const mins = String(Math.floor(searchSeconds / 60)).padStart(2, '0');
+    const secs = String(searchSeconds % 60).padStart(2, '0');
+    if (timerEl) timerEl.textContent = `${mins}:${secs}`;
+  }, 1000);
+
+  const sendFind = () => {
+    if (mpSocket && mpSocket.readyState === WebSocket.OPEN) {
+      mpSocket.send(JSON.stringify({
+        type: 'find_match',
+        playerId: save.playerId,
+        name: save.playerName || 'Harcos',
+        cups: save.trophies || 0,
+        deck: [...save.deck],
+        arena: save.arena || 1
+      }));
+    }
+  };
+
+  if (mpSocket && mpSocket.readyState === WebSocket.OPEN) {
+    sendFind();
+  } else {
+    mpSocket.addEventListener('open', sendFind, { once: true });
+  }
+}
+
+function cancelQuickMatchSearch(sendToServer = true) {
+  if (searchTimerInterval) {
+    clearInterval(searchTimerInterval);
+    searchTimerInterval = null;
+  }
+  isSearchingMatch = false;
+
+  if (sendToServer && mpSocket && mpSocket.readyState === WebSocket.OPEN) {
+    mpSocket.send(JSON.stringify({ type: 'cancel_search' }));
+  }
+
+  resetSearchUI();
+}
+
+function resetSearchUI() {
+  if (searchTimerInterval) {
+    clearInterval(searchTimerInterval);
+    searchTimerInterval = null;
+  }
+  isSearchingMatch = false;
+
+  const idleView = document.getElementById('mp-search-idle');
+  const activeView = document.getElementById('mp-search-active');
+  const banner = document.getElementById('mp-match-found-banner');
+
+  if (idleView) idleView.classList.remove('hidden');
+  if (activeView) activeView.classList.add('hidden');
+  if (banner) banner.classList.add('hidden');
+}
+
+// Show found banner with brief 2-second suspense then launch battle
+function showMatchFoundBanner(data) {
+  isSearchingMatch = false;
+  if (searchTimerInterval) {
+    clearInterval(searchTimerInterval);
+    searchTimerInterval = null;
+  }
+
+  const idleView = document.getElementById('mp-search-idle');
+  const activeView = document.getElementById('mp-search-active');
+  const banner = document.getElementById('mp-match-found-banner');
+
+  if (idleView) idleView.classList.add('hidden');
+  if (activeView) activeView.classList.add('hidden');
+  if (banner) banner.classList.remove('hidden');
+
+  const myNameEl = document.getElementById('mp-found-my-name');
+  const myCupsEl = document.getElementById('mp-found-my-cups');
+  const oppNameEl = document.getElementById('mp-found-opp-name');
+  const oppCupsEl = document.getElementById('mp-found-opp-cups');
+  const countdownEl = document.getElementById('mp-found-countdown');
+
+  if (myNameEl) myNameEl.textContent = save.playerName || 'Te';
+  if (myCupsEl) myCupsEl.textContent = `🏆 ${save.trophies || 0}`;
+  if (oppNameEl) oppNameEl.textContent = data.opponentName || 'Ellenfél';
+  if (oppCupsEl) oppCupsEl.textContent = `🏆 ${data.opponentCups || 0}`;
+
+  let countdown = 2;
+  if (countdownEl) countdownEl.textContent = `Csata indul: ${countdown}...`;
+
+  const countInterval = setInterval(() => {
+    countdown--;
+    if (countdown > 0) {
+      if (countdownEl) countdownEl.textContent = `Csata indul: ${countdown}...`;
+    } else {
+      clearInterval(countInterval);
+      if (banner) banner.classList.add('hidden');
+      resetSearchUI();
+      startMultiplayerBattle({
+        role: mpRole,
+        code: data.code,
+        opponentName: data.opponentName,
+        opponentCups: data.opponentCups,
+        opponentDeck: data.opponentDeck,
+        arena: data.arena || 1
+      });
+    }
+  }, 1000);
+}
+
+// ---------- CODE-BASED ROOMS ----------
 function createMultiplayerRoom() {
   initMultiplayerSocket();
   const sendCreate = () => {
     mpSocket.send(JSON.stringify({
       type: 'create_room',
-      name: 'Player (Host)',
+      playerId: save.playerId,
+      name: save.playerName || 'Harcos (Host)',
+      cups: save.trophies || 0,
       deck: [...save.deck],
       arena: save.arena
     }));
@@ -183,7 +411,9 @@ function joinMultiplayerRoom(code) {
     mpSocket.send(JSON.stringify({
       type: 'join_room',
       code: String(code).trim(),
-      name: 'Challenger',
+      playerId: save.playerId,
+      name: save.playerName || 'Kihívó',
+      cups: save.trophies || 0,
       deck: [...save.deck]
     }));
   };
@@ -214,13 +444,24 @@ function broadcastEmote(emote) {
   }));
 }
 
+// Notify server of battle end so cups and stats update
+function notifyMultiplayerBattleEnd(p, e) {
+  if (!isMultiplayerMatch || !mpSocket || mpSocket.readyState !== WebSocket.OPEN) return;
+  const winnerRole = p > e ? mpRole : (p < e ? (mpRole === 'host' ? 'guest' : 'host') : 'draw');
+  mpSocket.send(JSON.stringify({
+    type: 'match_end',
+    winnerRole,
+    crownsPlayer: p,
+    crownsEnemy: e
+  }));
+}
+
 // Start live 1v1 battle
 function startMultiplayerBattle(opts) {
   isMultiplayerMatch = true;
   document.getElementById('battle-screen').classList.remove('hidden');
   document.getElementById('result').classList.add('hidden');
 
-  // Launch battle with opponent's actual deck and without local bot AI
   startBattle({
     multiplayer: true,
     role: opts.role,
@@ -229,16 +470,15 @@ function startMultiplayerBattle(opts) {
   });
 }
 
-// Floating emote bubbles in battle
 function showFloatingEmote(team, emoteText) {
-  const x = team === PLAYER ? ARENA.centerX : ARENA.centerX;
+  const x = ARENA.centerX;
   const y = team === PLAYER ? ARENA.H - 120 : 120;
   if (battle) {
     battle.popups.push({ x, y, text: emoteText, life: 2.2 });
   }
 }
 
-// UI Modals for 4-Digit Room Code
+// Modals for 4-Digit Room Code
 function showHostWaitingModal(code) {
   let modal = document.getElementById('mp-host-modal');
   if (!modal) {
@@ -261,8 +501,8 @@ function showHostWaitingModal(code) {
         <span>Várakozás az ellenfélre...</span>
       </div>
       <div class="mp-modal-actions">
-        <button class="action-btn" id="btn-copy-code">Kód Másolása (Copy)</button>
-        <button class="action-btn cancel" id="btn-cancel-host">Mégse (Cancel)</button>
+        <button class="action-btn" id="btn-copy-code">Kód Másolása</button>
+        <button class="action-btn cancel" id="btn-cancel-host">Mégse</button>
       </div>
     </div>
   `;
@@ -273,10 +513,10 @@ function showHostWaitingModal(code) {
   document.getElementById('btn-cancel-host').addEventListener('click', closeMultiplayerModals);
   document.getElementById('btn-copy-code').addEventListener('click', () => {
     navigator.clipboard.writeText(code).then(() => {
-      document.getElementById('btn-copy-code').textContent = 'Másolva! (Copied)';
+      document.getElementById('btn-copy-code').textContent = 'Másolva!';
       setTimeout(() => {
         const btn = document.getElementById('btn-copy-code');
-        if (btn) btn.textContent = 'Kód Másolása (Copy)';
+        if (btn) btn.textContent = 'Kód Másolása';
       }, 2000);
     });
   });
@@ -318,7 +558,7 @@ function showJoinInputModal() {
   document.getElementById('btn-mp-join-submit').addEventListener('click', () => {
     const val = input.value.trim();
     if (val.length !== 4 || isNaN(val)) {
-      alert('Kérlek 4 számjegyet adj meg! / Please enter a 4-digit code.');
+      alert('Kérlek 4 számjegyet adj meg!');
       return;
     }
     document.getElementById('btn-mp-join-submit').disabled = true;
@@ -349,7 +589,28 @@ function showServerConfigModal() {
   modal.classList.remove('hidden');
 }
 
-function setupServerConfigListeners() {
+function setupMultiplayerEventListeners() {
+  // Mode switch buttons
+  const btnToggleQuick = document.getElementById('btn-toggle-quick');
+  const btnToggleCode = document.getElementById('btn-toggle-code');
+  if (btnToggleQuick) btnToggleQuick.onclick = () => switchMultiplayerMode('quick');
+  if (btnToggleCode) btnToggleCode.onclick = () => switchMultiplayerMode('code');
+
+  // Search mode buttons
+  const btnFindMatch = document.getElementById('btn-find-match');
+  if (btnFindMatch) btnFindMatch.onclick = startQuickMatchSearch;
+
+  const btnCancelSearch = document.getElementById('btn-cancel-search');
+  if (btnCancelSearch) btnCancelSearch.onclick = () => cancelQuickMatchSearch(true);
+
+  // Private room buttons
+  const btnHost = document.getElementById('btn-mp-host');
+  if (btnHost) btnHost.onclick = createMultiplayerRoom;
+
+  const btnJoin = document.getElementById('btn-mp-join');
+  if (btnJoin) btnJoin.onclick = showJoinInputModal;
+
+  // Server config modal buttons
   const btnCfg = document.getElementById('btn-mp-server-cfg');
   if (btnCfg) btnCfg.onclick = showServerConfigModal;
 
@@ -386,14 +647,20 @@ function setupServerConfigListeners() {
       initMultiplayerSocket();
     };
   }
+
+  // Restore preferred mode from storage
+  const savedMode = localStorage.getItem('animal_clash_mp_mode') || 'quick';
+  switchMultiplayerMode(savedMode);
+
+  // Update cups in UI
+  updatePlayerCupsUI();
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', setupServerConfigListeners);
+  document.addEventListener('DOMContentLoaded', setupMultiplayerEventListeners);
 } else {
-  setupServerConfigListeners();
+  setupMultiplayerEventListeners();
 }
 
 // Auto initialize on load
 initMultiplayerSocket();
-

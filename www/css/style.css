@@ -501,11 +501,283 @@ button { font-family: inherit; cursor: pointer; border: none; -webkit-tap-highli
 .avg-elixir-pill .icon { width: 18px; height: 18px; color: var(--gold); }
 .avg-elixir-pill b { color: var(--gold); }
 
+/* ---------- Multiplayer Mode Switch & Matchmaking ---------- */
+.mp-mode-section {
+  width: 100%;
+  margin-top: 12px;
+  background: rgba(44, 26, 14, 0.5);
+  border: 2px solid rgba(255, 201, 60, 0.3);
+  border-radius: 18px;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.mp-mode-toggle {
+  display: flex;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 14px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mp-toggle-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: #d1c1a5;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mp-toggle-btn.active {
+  background: linear-gradient(180deg, #ffc93c, #ff9f1c);
+  color: #2c1a0e;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.mp-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.mp-panel.hidden {
+  display: none !important;
+}
+
+.mp-profile-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 201, 60, 0.2);
+}
+
+.mp-cups-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 17px;
+  color: #ffd23f;
+}
+
+.mp-cups-badge .icon {
+  width: 22px;
+  height: 22px;
+  color: #ffd23f;
+}
+
+.mp-cups-lbl {
+  font-size: 12px;
+  color: #fffae8;
+  opacity: 0.85;
+}
+
+.mp-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #ddd;
+}
+
+.mp-search-btn {
+  background: linear-gradient(180deg, #ff6b6b, #ee5253);
+  border: 3px solid #b33939;
+  box-shadow: 0 4px 0 #892828, 0 8px 16px rgba(238, 82, 83, 0.3);
+  font-size: 17px;
+  padding: 13px 12px;
+  width: 100%;
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(255, 107, 107, 0.4)); }
+  50% { filter: drop-shadow(0 0 12px rgba(255, 107, 107, 0.8)); }
+}
+
+.mp-search-hint, .mp-code-hint {
+  font-size: 12px;
+  color: #d8c2a3;
+  text-align: center;
+  margin-top: 4px;
+}
+
+.mp-search-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.mp-radar-wrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: 10px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mp-radar-icon {
+  font-size: 32px;
+  z-index: 2;
+  animation: bounce 1.4s infinite ease-in-out;
+}
+
+.mp-radar-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 3px solid #ffc93c;
+  border-radius: 50%;
+  animation: radar-expand 1.8s infinite cubic-bezier(0.2, 0.6, 0.4, 1);
+}
+
+.mp-radar-ring.ring-2 {
+  animation-delay: 0.9s;
+}
+
+@keyframes radar-expand {
+  0% { transform: scale(0.3); opacity: 1; border-color: #ff9f1c; }
+  100% { transform: scale(1.6); opacity: 0; border-color: #ff4757; }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.mp-search-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff6e0;
+  margin-top: 4px;
+}
+
+.mp-search-timer {
+  font-size: 24px;
+  font-weight: 900;
+  color: #ffc93c;
+  letter-spacing: 2px;
+  margin: 4px 0;
+}
+
+.mp-search-sub {
+  font-size: 13px;
+  color: #2ed573;
+  margin-bottom: 10px;
+}
+
+.mp-cancel-btn {
+  max-width: 220px;
+}
+
+.mp-match-found-banner {
+  background: linear-gradient(180deg, #1e293b, #0f172a);
+  border: 3px solid #ffd23f;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes pop-in {
+  0% { transform: scale(0.7); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.mp-found-badge {
+  color: #2ed573;
+  font-weight: 900;
+  font-size: 17px;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.mp-found-players {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.mp-player-card {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mp-player-card.my-card {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.mp-player-card.opp-card {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.mp-player-card .name {
+  font-weight: bold;
+  font-size: 14px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mp-player-card .cups {
+  font-size: 13px;
+  color: #ffd23f;
+  font-weight: 700;
+}
+
+.mp-vs-badge {
+  font-size: 18px;
+  font-weight: 900;
+  color: #ff4757;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.mp-countdown {
+  font-size: 13px;
+  color: #f1f2f6;
+  font-weight: 600;
+}
+
 /* ---------- Multiplayer Lobby Buttons ---------- */
 .mp-lobby-row {
   display: flex;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 6px;
   width: 100%;
 }
 .mp-lobby-btn {
