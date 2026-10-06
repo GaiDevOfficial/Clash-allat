@@ -18,7 +18,7 @@ function playChestOpeningAnimation(rewards, onComplete) {
           <div class="chest-lock"></div>
         </div>
       </div>
-      <div class="chest-instruction" id="chest-hint">Tap chest to open!</div>
+      <div class="chest-instruction" id="chest-hint">Koppints a ládára a nyitáshoz!</div>
       <div class="chest-reveal-card hidden" id="chest-reveal-card"></div>
       <div class="chest-rewards-summary hidden" id="chest-summary"></div>
     </div>
@@ -134,7 +134,7 @@ function playChestOpeningAnimation(rewards, onComplete) {
     if (chestOpened) return;
     chestOpened = true;
     boxWrap.classList.add('opened');
-    hint.textContent = 'Tap anywhere to reveal rewards!';
+    hint.textContent = 'Koppints a folytatáshoz!';
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
     spawnBurst(cx, cy, 50, ['#ffd32a', '#ff9f1a', '#2ed573', '#ffffff', '#00d2d3']);
@@ -165,7 +165,7 @@ function playChestOpeningAnimation(rewards, onComplete) {
       revealCard.innerHTML = `
         <div class="reveal-reward-item gold">
           <span class="icon big-reward-icon" data-icon="gold"></span>
-          <div class="reveal-title">+${step.amount} Gold!</div>
+          <div class="reveal-title">+${step.amount} Arany!</div>
         </div>
       `;
       applyIcons(revealCard);
@@ -174,7 +174,7 @@ function playChestOpeningAnimation(rewards, onComplete) {
       revealCard.innerHTML = `
         <div class="reveal-reward-item gems">
           <span class="icon big-reward-icon" data-icon="gem"></span>
-          <div class="reveal-title">+${step.amount} Gems!</div>
+          <div class="reveal-title">+${step.amount} Drágakő!</div>
         </div>
       `;
       applyIcons(revealCard);
@@ -192,13 +192,13 @@ function playChestOpeningAnimation(rewards, onComplete) {
 
       revealCard.innerHTML = `
         <div class="reveal-card-frame" style="border-color: ${rarity.color}">
-          ${step.isNew ? '<span class="new-card-badge">ÚJ KÁRTYA! / NEW!</span>' : ''}
+          ${step.isNew ? '<span class="new-card-badge">ÚJ KÁRTYA!</span>' : ''}
           <div class="reveal-card-header">
             <h4>${card.name}</h4>
             <span class="rarity-pill" style="background: ${rarity.color}">${rarity.name}</span>
           </div>
-          <canvas width="${90 * dpr}" height="${90 * dpr}"></canvas>
-          <div class="reveal-card-count">+${step.count} Cards</div>
+          <canvas width="${90 * dpr}" height="${90 * dpr}" style="width:90px;height:90px;"></canvas>
+          <div class="reveal-card-count">+${step.count} kártya</div>
           ${card.ability ? `<div class="reveal-ability">⚡ ${card.ability}</div>` : ''}
         </div>
       `;
@@ -219,7 +219,7 @@ function playChestOpeningAnimation(rewards, onComplete) {
       const rarity = RARITIES[card.rarity];
       cardsHtml += `
         <div class="summary-card-tile" style="border-color: ${rarity.color}">
-          <canvas class="sum-cv" data-id="${id}" width="${50 * dpr}" height="${50 * dpr}"></canvas>
+          <canvas class="sum-cv" data-id="${id}" width="${50 * dpr}" height="${50 * dpr}" style="width:48px;height:48px;"></canvas>
           <span>${card.name}</span>
           <b>+${rewards.cards[id]}</b>
         </div>
@@ -228,13 +228,13 @@ function playChestOpeningAnimation(rewards, onComplete) {
 
     summary.innerHTML = `
       <div class="summary-box">
-        <h2>${chestName(rewards.chest)} Opened!</h2>
+        <h2>${chestName(rewards.chest)} kinyitva!</h2>
         <div class="summary-currencies">
           ${rewards.gold ? `<div class="sum-pill gold"><span class="icon" data-icon="gold"></span> +${rewards.gold}</div>` : ''}
           ${rewards.gems ? `<div class="sum-pill gem"><span class="icon" data-icon="gem"></span> +${rewards.gems}</div>` : ''}
         </div>
         <div class="summary-cards-grid">${cardsHtml}</div>
-        <button class="big-btn collect-btn" id="btn-anim-collect">Collect Rewards!</button>
+        <button class="big-btn collect-btn" id="btn-anim-collect">Jutalmak Begyűjtése</button>
       </div>
     `;
     applyIcons(summary);

@@ -876,6 +876,74 @@ const PREVIEW_DRAW = {
     }
     fadeOut(ctx, w, h, cycle);
   },
+
+  beaver(ctx, w, h, time) {
+    const cycle = time % 4;
+    const groundY = h - 22;
+    const bridgeX = Math.round(w / 2);
+    const scareX = w - 45;
+
+    drawPreviewGround(ctx, w, h, groundY);
+
+    // River band across preview
+    ctx.fillStyle = '#4fa4d8';
+    ctx.fillRect(bridgeX - 18, 0, 36, h);
+    ctx.fillStyle = '#c8a472';
+    ctx.fillRect(bridgeX - 14, groundY - 14, 28, 26); // bridge planks
+
+    const building = cycle >= 0.8 && cycle < 1.4;
+    const gateReady = cycle >= 1.2;
+    const beaverX = cycle < 0.8 ? -20 + (cycle / 0.8) * (bridgeX - 35 + 20) : (bridgeX - 35);
+
+    drawBeaver(ctx, beaverX, groundY + 4, {
+      scale: 1.8,
+      facing: 1,
+      time,
+      team: PLAYER,
+      moving: cycle < 0.8,
+      attack: building
+    });
+
+    if (gateReady) {
+      drawGate(ctx, { x: bridgeX, y: groundY - 6, hp: 700, maxHp: 700, team: PLAYER }, time);
+      if (cycle >= 1.2 && cycle < 2.0) {
+        drawDamagePop(ctx, bridgeX, groundY - 45, (cycle - 1.2) / 0.8, '🛡️ GÁT (700 ÉP)!', '#68d391', 12);
+      }
+    }
+
+    // Scarecrow approaches the gate from the right and gets blocked
+    const scarePos = cycle < 1.4 ? scareX : Math.max(bridgeX + 22, scareX - (cycle - 1.4) * 35);
+    drawScarecrow(ctx, scarePos, groundY);
+
+    fadeOut(ctx, w, h, cycle);
+  },
+
+  honey(ctx, w, h, time) {
+    const cycle = time % 4;
+    const groundY = h - 22;
+    const puddleX = Math.round(w / 2);
+
+    drawPreviewGround(ctx, w, h, groundY);
+
+    // Honey puddle in center
+    drawHoneyPuddle(ctx, { x: puddleX, y: groundY - 2, radius: 36, t: cycle, duration: 4 }, time);
+
+    // Enemy walks in, steps in honey, and gets completely trapped!
+    const scareWalk = cycle < 1.0;
+    const scarePos = scareWalk ? -20 + (cycle / 1.0) * (puddleX + 20) : puddleX;
+    const trapped = cycle >= 1.0;
+
+    drawScarecrow(ctx, scarePos, groundY);
+
+    if (trapped) {
+      drawHoneyTrappedEffect(ctx, scarePos, groundY, time);
+      if (cycle >= 1.0 && cycle < 2.2) {
+        drawDamagePop(ctx, scarePos, groundY - 55, (cycle - 1.0) / 1.2, '🍯 3 mp DERMESZTÉS!', '#f6ad55', 12);
+      }
+    }
+
+    fadeOut(ctx, w, h, cycle);
+  },
 };
 
 // Shared by the two pigs: run in fast, then bite the scarecrow again and again

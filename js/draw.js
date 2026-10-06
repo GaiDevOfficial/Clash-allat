@@ -3,6 +3,24 @@ const PLAYER = 1;   // bottom side
 const ENEMY = -1;   // top side
 const TEAM_COLORS = { 1: '#3b82f6', '-1': '#e04848' };
 
+// High-fidelity soft directional drop shadow & ambient occlusion
+function drawObjectShadow(ctx, x, y, rx, ry, alpha = 0.35) {
+  ctx.save();
+  // Ambient outer penumbra
+  ctx.fillStyle = `rgba(10, 20, 5, ${alpha * 0.45})`;
+  ellipse(ctx, x + 1, y + 1, rx * 1.3, ry * 1.3);
+  ctx.fill();
+  // Main shadow body
+  ctx.fillStyle = `rgba(5, 12, 3, ${alpha * 0.75})`;
+  ellipse(ctx, x, y, rx, ry);
+  ctx.fill();
+  // Direct contact ambient occlusion
+  ctx.fillStyle = `rgba(2, 6, 1, ${alpha})`;
+  ellipse(ctx, x - 0.5, y - 0.5, rx * 0.6, ry * 0.6);
+  ctx.fill();
+  ctx.restore();
+}
+
 // Colors for each bird type
 const BIRD_STYLES = {
   chicken: { body: '#fffaf0', wing: '#ece1cc', tail: '#f3ead8', outline: '#8a7a6a', bigComb: false },
@@ -104,8 +122,25 @@ function drawBird(ctx, x, y, o) {
 
 // Draws any unit based on its card's "draw" type
 function drawUnit(ctx, u, time) {
+  if (u.isGate) {
+    drawGate(ctx, u, time);
+    return;
+  }
+
   const s = CARDS[u.cardId].unit;
-  if (s.draw === 'bee') {
+
+  // Realistic dynamic shadows below objects
+  if (u.flying) {
+    // Flying units cast a soft ambient ground shadow slightly offset to simulate altitude
+    drawObjectShadow(ctx, u.x + 3, u.y + 14, (s.radius || 10) * 1.1, (s.radius || 10) * 0.5, 0.22);
+  } else {
+    // Ground units cast crisp contact shadow directly under their feet
+    drawObjectShadow(ctx, u.x + 1, u.y + 1, (s.radius || 10) * 1.25, (s.radius || 10) * 0.55, 0.38);
+  }
+
+  if (s.draw === 'beaver') {
+    drawBeaver(ctx, u.x, u.y, { scale: s.drawScale, facing: u.facing, time: time + u.anim, team: u.team, moving: u.moving, attack: u.peck > 0 });
+  } else if (s.draw === 'bee') {
     drawBee(ctx, u.x, u.y, { facing: u.facing, time: time + u.anim, team: u.team, hover: 16 });
   } else if (s.draw === 'hive') {
     drawHive(ctx, u.x, u.y, { scale: s.drawScale, team: u.team });
@@ -163,6 +198,10 @@ function drawUnit(ctx, u, time) {
   // Draw Stun effect if unit is stunned
   if (u.stunTimer > 0) {
     drawStunnedEffect(ctx, u.x, u.y - (s.hpBarY || 24 * s.drawScale) - 8, time);
+  }
+  // Draw Honey trapped effect if stuck in honey
+  if (u.honeyTimer > 0) {
+    drawHoneyTrappedEffect(ctx, u.x, u.y, time);
   }
 
   const barY = s.hpBarY || 24 * s.drawScale;
@@ -729,8 +768,7 @@ function drawHive(ctx, x, y, o) {
   ctx.translate(x, y);
   ctx.scale(s, s);
 
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ellipse(ctx, 0, 0, 12, 4); ctx.fill();
+  drawObjectShadow(ctx, 0, 1, 14, 5, 0.4);
   if (o.team) {
     ctx.strokeStyle = TEAM_COLORS[o.team];
     ctx.lineWidth = 2;
@@ -802,8 +840,10 @@ function drawWheatField(ctx, x, y, o) {
 
   // Shadow + team border stay on the ground around the patch
   ctx.save();
-  ctx.translate(1, 2);
-  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.translate(2, 3);
+  ctx.fillStyle = 'rgba(10, 20, 5, 0.18)';
+  patch(1.5, frontY + side + 1); ctx.fill();
+  ctx.fillStyle = 'rgba(5, 12, 3, 0.32)';
   patch(0.5, frontY + side); ctx.fill();
   ctx.restore();
   if (o.team) {
@@ -1590,6 +1630,7 @@ function drawTower(ctx, t) {
   const { x, y } = t;
 
   if (t.dead) {
+    drawObjectShadow(ctx, x + 2, y + 2, 22, 9, 0.28);
     ctx.fillStyle = '#8a8a8a';
     for (let i = 0; i < 6; i++) {
       ellipse(ctx, x - 12 + (i % 3) * 12, y - 2 + Math.floor(i / 3) * 7, 7, 5); ctx.fill();
@@ -1603,6 +1644,8 @@ function drawTower(ctx, t) {
   ctx.lineWidth = 2;
 
   if (t.kind === 'princess') {
+    // Drop shadow under silo
+    drawObjectShadow(ctx, x + 3, y + 6, 26, 12, 0.45);
     // Stone base
     ctx.fillStyle = '#9d9d9d';
     ellipse(ctx, x, y + 4, 20, 9); ctx.fill(); ctx.stroke();
@@ -1627,6 +1670,8 @@ function drawTower(ctx, t) {
     drawFlag(ctx, x, y - 59, color);
     drawHpBar(ctx, x, y - 80, 40, t.hp / t.maxHp, color);
   } else {
+    // Drop shadow under main barn
+    drawObjectShadow(ctx, x + 4, y + 10, 42, 16, 0.5);
     // Stone base
     ctx.fillStyle = '#9d9d9d';
     ellipse(ctx, x, y + 6, 34, 12); ctx.fill(); ctx.stroke();
@@ -2145,54 +2190,61 @@ const PORTRAIT_FIT = {
 
 // Card portrait (hand + deck)
 function drawCardPortrait(canvas, cardId) {
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const w = canvas.width;
+  const h = canvas.height;
   const card = CARDS[cardId];
+  if (!card) return;
 
   // Spells have no animal: draw a little icon of the spell instead
   if (card.spell && !card.unit) {
-    drawSpellPortrait(ctx, card.spell.kind, w, canvas.height);
+    drawSpellPortrait(ctx, card.spell.kind, w, h);
     return;
   }
 
   const kind = card.unit.draw;
-  if (kind === 'bee') {
-    drawBee(ctx, w / 2 - 2, w / 2, { scale: w / 18, facing: 1, time: 0 });
+  const groundY = h * 0.76;
+
+  if (kind === 'beaver') {
+    drawBeaver(ctx, w / 2 - 2, groundY, { scale: w / 32, facing: 1, time: 0 });
+  } else if (kind === 'bee') {
+    drawBee(ctx, w / 2 - 2, h / 2, { scale: w / 18, facing: 1, time: 0 });
   } else if (kind === 'hive') {
-    drawHive(ctx, w / 2, canvas.height - 8, { scale: w / 28 });
+    drawHive(ctx, w / 2, groundY + h * 0.04, { scale: w / 28 });
   } else if (kind === 'wheatfield') {
     // Ripe golden field, no team border
     const fs = (w * 0.86) / 32;
-    drawWheatField(ctx, w / 2, canvas.height / 2 + 4 * fs, { scale: fs, team: null, growth: 1, time: 0 });
+    drawWheatField(ctx, w / 2, h / 2 + 4 * fs, { scale: fs, team: null, growth: 1, time: 0 });
   } else if (kind === 'goose') {
     // time 0.15 = wings up
     const gs = w / 36;
-    drawGoose(ctx, w / 2 - 2.4 * gs, canvas.height / 2 + 13 * gs, { scale: gs, facing: 1, time: 0.15, hover: 0 });
+    drawGoose(ctx, w / 2 - 2.4 * gs, h / 2 + 13 * gs, { scale: gs, facing: 1, time: 0.15, hover: 0 });
   } else if (kind === 'snake') {
-    drawSnake(ctx, w / 2 - 2, canvas.height - 14, { scale: w / 28, facing: 1, time: 0 });
+    drawSnake(ctx, w / 2 - 2, h * 0.68, { scale: w / 28, facing: 1, time: 0 });
   } else if (kind === 'frog') {
-    drawFrog(ctx, w / 2, canvas.height - 12, { scale: w / 25, facing: 1, time: 0 });
+    drawFrog(ctx, w / 2, groundY, { scale: w / 25, facing: 1, time: 0 });
   } else if (kind === 'cheetah') {
-    drawCheetah(ctx, w / 2 - 2, canvas.height - 12, { scale: w / 36, facing: 1, time: 0 });
+    drawCheetah(ctx, w / 2 - 2, groundY, { scale: w / 36, facing: 1, time: 0 });
   } else if (kind === 'eel') {
-    drawEel(ctx, w / 2, canvas.height / 2 + 6, { scale: w / 28, facing: 1, time: 0 });
+    drawEel(ctx, w / 2, h / 2 + h * 0.08, { scale: w / 28, facing: 1, time: 0 });
   } else if (kind === 'armadillo') {
-    drawArmadillo(ctx, w / 2, canvas.height - 12, { scale: w / 30, facing: 1, time: 0 });
+    drawArmadillo(ctx, w / 2, groundY, { scale: w / 30, facing: 1, time: 0 });
   } else if (kind === 'falcon') {
-    drawFalcon(ctx, w / 2, canvas.height / 2 + 12, { scale: w / 34, facing: 1, time: 0, lift: 0 });
+    drawFalcon(ctx, w / 2, h / 2 + h * 0.16, { scale: w / 34, facing: 1, time: 0, lift: 0 });
   } else if (kind === 'badger') {
-    drawBadger(ctx, w / 2, canvas.height - 12, { scale: w / 30, facing: 1, time: 0 });
+    drawBadger(ctx, w / 2, groundY, { scale: w / 30, facing: 1, time: 0 });
   } else if (kind === 'gorilla') {
-    drawGorilla(ctx, w / 2, canvas.height - 10, { scale: w / 38, facing: 1, time: 0 });
+    drawGorilla(ctx, w / 2, groundY + h * 0.02, { scale: w / 38, facing: 1, time: 0 });
   } else if (PORTRAIT_FIT[kind]) {
     const [mx, my, size] = PORTRAIT_FIT[kind];
     const ps = (w * 0.88) / size;
-    drawQuadruped(ctx, w / 2 - mx * ps, canvas.height / 2 - my * ps, { kind, scale: ps, facing: 1, time: 0 });
+    drawQuadruped(ctx, w / 2 - mx * ps, h / 2 - my * ps, { kind, scale: ps, facing: 1, time: 0 });
   } else if (QUAD_STYLES[kind]) {
-    drawQuadruped(ctx, w / 2 - w / 14, canvas.height - 10, { kind, scale: w / 42, facing: 1, time: 0 });
+    drawQuadruped(ctx, w / 2 - w / 14, groundY + h * 0.02, { kind, scale: w / 42, facing: 1, time: 0 });
   } else {
-    drawBird(ctx, w / 2 - 2, canvas.height - 10, { kind, scale: w / 32, facing: 1, time: 0, team: null });
+    drawBird(ctx, w / 2 - 2, groundY + h * 0.02, { kind, scale: w / 32, facing: 1, time: 0, team: null });
   }
 }
 
@@ -2229,6 +2281,327 @@ function drawSpellPortrait(ctx, kind, w, h) {
       ellipse(ctx, dx, dy, r, r * 1.2); ctx.fill();
     });
     drawMudBall(ctx, 32, 29, 14, 0.3);
+  } else if (kind === 'honey') {
+    // Honey pot with dripping golden honey
+    drawObjectShadow(ctx, 32, 55, 18, 6, 0.35);
+    // Clay honey pot
+    ctx.fillStyle = '#b45309';
+    ctx.strokeStyle = '#451a03';
+    ctx.lineWidth = 2.5;
+    ellipse(ctx, 32, 38, 16, 14); ctx.fill(); ctx.stroke();
+    // Pot rim
+    ctx.fillStyle = '#d97706';
+    ellipse(ctx, 32, 24, 13, 5); ctx.fill(); ctx.stroke();
+    // Dripping rich golden honey
+    ctx.fillStyle = '#fbbf24';
+    ctx.strokeStyle = '#b45309';
+    ctx.lineWidth = 1.5;
+    ellipse(ctx, 32, 23, 11, 4); ctx.fill();
+    // Honey drips over edge
+    ctx.beginPath();
+    ctx.moveTo(25, 24);
+    ctx.quadraticCurveTo(27, 38, 29, 38);
+    ctx.quadraticCurveTo(31, 38, 33, 24);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    // Little honeybee next to pot
+    ellipse(ctx, 48, 18, 4, 3); ctx.fillStyle = '#fbbf24'; ctx.fill();
   }
+  ctx.restore();
+}
+
+// ---------- HÓD (BEAVER), GÁT (GATE), MÉZ (HONEY) DRAWING ROUTINES ----------
+
+function drawBeaver(ctx, x, y, o) {
+  const s = (o.scale || 1) * 1.15;
+  const step = o.moving ? Math.sin(o.time * 16) : 0;
+  const bob = o.moving ? Math.abs(step) * 1.4 : 0;
+  const tailWag = o.moving ? Math.sin(o.time * 14) * 0.25 : 0;
+  const attackChop = o.attack ? Math.sin(o.time * 24) * 4 : 0;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s * (o.facing || 1), s);
+
+  // Team ground ring
+  if (o.team) {
+    ctx.strokeStyle = TEAM_COLORS[o.team];
+    ctx.lineWidth = 2.2;
+    ellipse(ctx, 0, 0, 14, 5.5);
+    ctx.stroke();
+  }
+
+  // Large paddle tail (flat, broad, criss-cross waffle texture)
+  ctx.save();
+  ctx.translate(-10, -5 + bob * 0.5);
+  ctx.rotate(-0.15 + tailWag);
+  ctx.fillStyle = '#422812';
+  ctx.strokeStyle = '#2b1507';
+  ctx.lineWidth = 1.2;
+  ellipse(ctx, -8, 2, 11, 5.5);
+  ctx.fill(); ctx.stroke();
+  // Crosshatch scales on paddle tail
+  ctx.strokeStyle = 'rgba(20, 10, 4, 0.45)';
+  ctx.lineWidth = 0.9;
+  ctx.beginPath();
+  ctx.moveTo(-16, -1); ctx.lineTo(-2, 5);
+  ctx.moveTo(-16, 2); ctx.lineTo(-3, -2);
+  ctx.moveTo(-13, -2); ctx.lineTo(-5, 4);
+  ctx.moveTo(-13, 4); ctx.lineTo(-5, -2);
+  ctx.stroke();
+  ctx.restore();
+
+  // Back leg & paw
+  ctx.fillStyle = '#533116';
+  ctx.strokeStyle = '#2b1507';
+  ctx.lineWidth = 1.2;
+  ellipse(ctx, -5 + step * 2, -1, 4, 2.5); ctx.fill(); ctx.stroke();
+
+  // Sturdy round beaver body
+  ctx.fillStyle = '#6e411b';
+  ctx.strokeStyle = '#381f0b';
+  ctx.lineWidth = 1.5;
+  ellipse(ctx, 0, -11 - bob, 12.5, 9.5);
+  ctx.fill(); ctx.stroke();
+
+  // Light belly patch
+  ctx.fillStyle = '#8f5c2e';
+  ellipse(ctx, 3, -9 - bob, 7, 6);
+  ctx.fill();
+
+  // Front foot / paw
+  ctx.fillStyle = '#533116';
+  ellipse(ctx, 6 - step * 2, -1, 3.5, 2); ctx.fill(); ctx.stroke();
+
+  // Head
+  ctx.translate(0, -bob);
+  ctx.fillStyle = '#7a481e';
+  ellipse(ctx, 8, -16 + attackChop * 0.3, 7.5, 6.5);
+  ctx.fill(); ctx.stroke();
+
+  // Round beaver ear
+  ctx.fillStyle = '#533116';
+  ellipse(ctx, 4, -22, 2.5, 2.5); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#d49575';
+  ellipse(ctx, 4.2, -21.8, 1.2, 1.2); ctx.fill();
+
+  // Shiny eye
+  ctx.fillStyle = '#111';
+  ellipse(ctx, 11, -17, 1.5, 1.8); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ellipse(ctx, 11.5, -17.5, 0.6, 0.6); ctx.fill();
+
+  // Muzzle & cute cheeks
+  ctx.fillStyle = '#9b683a';
+  ellipse(ctx, 12, -14, 4, 3.2); ctx.fill();
+  ctx.fillStyle = '#1e1106';
+  ellipse(ctx, 14.5, -15.5, 1.6, 1.2); ctx.fill();
+
+  // Iconic orange/white beaver buck teeth
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = '#c27803';
+  ctx.lineWidth = 0.8;
+  ctx.fillRect(12.5, -11.5, 2, 3);
+  ctx.strokeRect(12.5, -11.5, 2, 3);
+  ctx.fillRect(14.5, -11.5, 2, 3);
+  ctx.strokeRect(14.5, -11.5, 2, 3);
+
+  // Cute wooden stick in paws
+  ctx.fillStyle = '#b4783f';
+  ctx.strokeStyle = '#5a3416';
+  ctx.lineWidth = 1;
+  ctx.save();
+  ctx.translate(8, -8 + attackChop);
+  ctx.rotate(0.3);
+  ctx.fillRect(-2, -5, 4, 10);
+  ctx.strokeRect(-2, -5, 4, 10);
+  ellipse(ctx, 0, -5, 2, 0.8); ctx.fill(); ctx.stroke();
+  ctx.restore();
+
+  // Paws holding the wood
+  ctx.fillStyle = '#422812';
+  ellipse(ctx, 7, -8 + attackChop, 2.2, 2.2); ctx.fill();
+
+  ctx.restore();
+}
+
+function drawGate(ctx, g, time) {
+  const { x, y, hp, maxHp, team } = g;
+  const color = TEAM_COLORS[team];
+  const hpRatio = Math.max(0, hp / maxHp);
+
+  ctx.save();
+  // Drop shadow on the bridge
+  drawObjectShadow(ctx, x, y + 4, 22, 9, 0.5);
+
+  // Left & right heavy oak timber gateposts
+  ctx.fillStyle = '#5a3515';
+  ctx.strokeStyle = '#2d1808';
+  ctx.lineWidth = 2;
+  ctx.fillRect(x - 18, y - 24, 7, 26);
+  ctx.strokeRect(x - 18, y - 24, 7, 26);
+  ctx.fillRect(x + 11, y - 24, 7, 26);
+  ctx.strokeRect(x + 11, y - 24, 7, 26);
+
+  // Post top caps (carved pyramids)
+  ctx.fillStyle = '#7a481e';
+  ctx.beginPath(); ctx.moveTo(x - 19, y - 24); ctx.lineTo(x - 14.5, y - 29); ctx.lineTo(x - 10, y - 24); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + 10, y - 24); ctx.lineTo(x + 14.5, y - 29); ctx.lineTo(x + 19, y - 24); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Sturdy crossbeam on top
+  ctx.fillStyle = '#7a481e';
+  ctx.fillRect(x - 19, y - 21, 38, 5);
+  ctx.strokeRect(x - 19, y - 21, 38, 5);
+
+  // Iron spikes along the top facing enemy side
+  ctx.fillStyle = '#a0aec0';
+  ctx.strokeStyle = '#2d3748';
+  ctx.lineWidth = 1;
+  const spikeDir = team === PLAYER ? -1 : 1;
+  for (let sx = -14; sx <= 14; sx += 7) {
+    ctx.beginPath();
+    ctx.moveTo(x + sx - 2, y - 21);
+    ctx.lineTo(x + sx, y - 21 + spikeDir * 6);
+    ctx.lineTo(x + sx + 2, y - 21);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  }
+
+  // Wooden log gate doors (planks)
+  ctx.fillStyle = hpRatio < 0.35 ? '#825632' : '#946138';
+  ctx.strokeStyle = '#3e200a';
+  ctx.lineWidth = 1.4;
+  ctx.fillRect(x - 11, y - 16, 22, 18);
+  ctx.strokeRect(x - 11, y - 16, 22, 18);
+
+  // Vertical log grooves
+  ctx.beginPath();
+  ctx.moveTo(x - 4, y - 16); ctx.lineTo(x - 4, y + 2);
+  ctx.moveTo(x + 4, y - 16); ctx.lineTo(x + 4, y + 2);
+  ctx.stroke();
+
+  // Iron reinforcement brackets
+  ctx.fillStyle = '#4a5568';
+  ctx.fillRect(x - 12, y - 14, 5, 3);
+  ctx.fillRect(x + 7, y - 14, 5, 3);
+  ctx.fillRect(x - 12, y - 4, 5, 3);
+  ctx.fillRect(x + 7, y - 4, 5, 3);
+
+  // Team colored shield banner on gate center
+  ctx.fillStyle = color;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(x - 6, y - 13);
+  ctx.lineTo(x + 6, y - 13);
+  ctx.lineTo(x + 6, y - 5);
+  ctx.lineTo(x, y - 1);
+  ctx.lineTo(x - 6, y - 5);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  // Little icon inside banner
+  ctx.fillStyle = '#fff';
+  ellipse(ctx, x, y - 7, 2.5, 2.5); ctx.fill();
+
+  // Damage cracks if low HP
+  if (hpRatio < 0.6) {
+    ctx.strokeStyle = '#1e1106';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(x - 8, y - 10); ctx.lineTo(x - 3, y - 6); ctx.lineTo(x - 5, y);
+    ctx.stroke();
+  }
+
+  // Health bar above gate
+  drawHpBar(ctx, x, y - 34, 38, hpRatio, color);
+
+  // Label: "700 ÉP"
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 9px Trebuchet MS, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 2.5;
+  ctx.strokeText(`🛡️ ${Math.round(hp)}`, x, y - 37);
+  ctx.fillText(`🛡️ ${Math.round(hp)}`, x, y - 37);
+
+  ctx.restore();
+}
+
+function drawHoneyPuddle(ctx, p, time) {
+  const { x, y, radius, t, duration } = p;
+  const fade = duration ? Math.min(1, (duration - t) / 1) : 1;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, fade);
+
+  // Outer sticky honey seep ring
+  ctx.fillStyle = 'rgba(217, 119, 6, 0.35)';
+  ellipse(ctx, x, y + 1, radius * 1.15, radius * 0.75);
+  ctx.fill();
+
+  // Main thick golden honey puddle
+  const grad = ctx.createRadialGradient(x, y - 2, 2, x, y, radius);
+  grad.addColorStop(0, '#fef08a');
+  grad.addColorStop(0.3, '#f59e0b');
+  grad.addColorStop(0.7, '#d97706');
+  grad.addColorStop(1, '#92400e');
+  ctx.fillStyle = grad;
+  ctx.strokeStyle = 'rgba(180, 83, 9, 0.85)';
+  ctx.lineWidth = 2;
+
+  // Organic honey puddle shape
+  ctx.beginPath();
+  for (let a = 0; a < Math.PI * 2; a += 0.35) {
+    const wobble = Math.sin(a * 4 + time * 1.5) * 2;
+    const px = x + Math.cos(a) * (radius + wobble);
+    const py = y + Math.sin(a) * (radius * 0.65 + wobble * 0.6);
+    if (a === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  // Glossy reflection / specular shine
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+  ellipse(ctx, x - radius * 0.35, y - radius * 0.22, radius * 0.38, radius * 0.16);
+  ctx.fill();
+
+  // Floating sticky bubbles
+  [[0.2, -0.1], [-0.35, 0.15], [0.3, 0.18], [-0.1, -0.22]].forEach(([ox, oy], i) => {
+    const bob = Math.sin(time * 3 + i * 2) * 1.2;
+    ctx.fillStyle = 'rgba(254, 240, 138, 0.7)';
+    ellipse(ctx, x + ox * radius, y + oy * radius * 0.6 + bob, 3, 2);
+    ctx.fill();
+  });
+
+  ctx.restore();
+}
+
+function drawHoneyTrappedEffect(ctx, x, y, time) {
+  ctx.save();
+  // Amber crystalline sticky encasing
+  ctx.fillStyle = 'rgba(245, 158, 11, 0.45)';
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 2.5;
+  ellipse(ctx, x, y - 10, 16, 20);
+  ctx.fill(); ctx.stroke();
+
+  // Honey dripping droplets
+  ctx.fillStyle = '#d97706';
+  for (let i = 0; i < 3; i++) {
+    const dropY = ((time * 25 + i * 14) % 24);
+    ellipse(ctx, x - 8 + i * 8, y - 2 + dropY * 0.4, 2, 3);
+    ctx.fill();
+  }
+
+  // Trapped icon / Honey badge above head
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = '#78350f';
+  ctx.lineWidth = 2.5;
+  ctx.font = 'bold 11px Trebuchet MS, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.strokeText('🍯 MÉZBEN!', x, y - 36);
+  ctx.fillText('🍯 MÉZBEN!', x, y - 36);
+
   ctx.restore();
 }

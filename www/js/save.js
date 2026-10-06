@@ -44,6 +44,8 @@ function defaultSave() {
     activeDeckIndex: 0,
     chests: [],    // { type, arena, readyAt } (readyAt = time in ms when it can be opened)
     bundlesBought: {},
+    claimedSeasonTiers: [],
+    seasonId: 1,
   };
 }
 
@@ -63,6 +65,7 @@ function loadSave() {
       ['chickens', 'rooster', 'bull', 'horse', 'snake', 'frog', 'cheetah', 'cornRain']
     ];
     s.activeDeckIndex = 0;
+  }
   if (!s.playerId) {
     s.playerId = 'player_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
   }
@@ -73,6 +76,8 @@ function loadSave() {
     s.trophies = 0;
   }
   if (!s.bundlesBought) s.bundlesBought = {};
+  if (!s.claimedSeasonTiers) s.claimedSeasonTiers = [];
+  if (s.seasonId === undefined) s.seasonId = 1;
   // Every card gets an entry, also cards added in a later version of the game
   for (const id of Object.keys(CARDS)) {
     if (!s.cards[id]) s.cards[id] = { level: 1, count: 0 };

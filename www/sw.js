@@ -1,5 +1,5 @@
 // Service Worker for Állati Aréna (Animal Clash)
-const CACHE_NAME = 'allati-arena-v1';
+const CACHE_NAME = 'allati-arena-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -20,6 +20,9 @@ const ASSETS = [
   './js/challenges.js',
   './js/chest-animation.js',
   './js/multiplayer.js',
+  './js/season.js',
+  './js/sound.js',
+  './js/web-controls.js',
   './js/ui.js',
   './icon.png',
   './manifest.json'

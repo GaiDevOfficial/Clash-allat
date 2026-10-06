@@ -28,13 +28,13 @@ function renderDeckPage() {
 
   deckTabs.innerHTML = `
     <div class="deck-presets">
-      <button class="preset-btn ${activeIdx === 0 ? 'active' : ''}" data-idx="0">Deck 1</button>
-      <button class="preset-btn ${activeIdx === 1 ? 'active' : ''}" data-idx="1">Deck 2</button>
-      <button class="preset-btn ${activeIdx === 2 ? 'active' : ''}" data-idx="2">Deck 3</button>
+      <button class="preset-btn ${activeIdx === 0 ? 'active' : ''}" data-idx="0">1. Pakli</button>
+      <button class="preset-btn ${activeIdx === 1 ? 'active' : ''}" data-idx="1">2. Pakli</button>
+      <button class="preset-btn ${activeIdx === 2 ? 'active' : ''}" data-idx="2">3. Pakli</button>
     </div>
     <div class="avg-elixir-pill">
       <span class="icon" data-icon="feed"></span>
-      <span>Avg: <b>${avgCost}</b> táp</span>
+      <span>Átlag: <b>${avgCost}</b> táp</span>
     </div>
   `;
   applyIcons(deckTabs);
@@ -79,7 +79,7 @@ function renderDeckPage() {
   if (swapBanner) {
     swapBanner.classList.toggle('hidden', !swapCardId);
     if (swapCardId && CARDS[swapCardId]) {
-      swapBanner.querySelector('span').textContent = `Select a slot to replace with ${CARDS[swapCardId].name}:`;
+      swapBanner.querySelector('span').textContent = `Válaszd ki, melyik helyére kerüljön a(z) ${CARDS[swapCardId].name}!`;
     }
   }
   deckGrid.classList.toggle('swapping', !!swapCardId);
@@ -160,7 +160,7 @@ function openCardModal(id) {
       ${unlocked ? p.level + '. szint &middot; ' : ''}
       <span class="icon" data-icon="feed"></span> ${card.cost} táp &middot; ${arena.id}. Aréna (${arena.name})
     </div>
-    ${card.ability ? `<div class="ability-badge">⚡ <b>Képesség / Ability:</b> ${card.ability}</div>` : ''}
+    ${card.ability ? `<div class="ability-badge">⚡ <b>Képesség:</b> ${card.ability}</div>` : ''}
     <canvas class="preview"></canvas>
     <p class="desc">${card.description}</p>
     <ul class="stats">${statsHtml(card, p.level)}</ul>
@@ -196,29 +196,29 @@ function statsHtml(card, level) {
   const line = (label, value) => `<li><span>${label}</span><b>${value}</b></li>`;
   if (card.spell) {
     const sp = card.spell;
-    return line('Sebzés (Damage)', Math.round(sp.damage * mult)) +
-      line('Toronyra (Tower Dmg)', Math.round(sp.damage * mult * sp.towerDamage)) +
-      line('Költség (Elixir)', `${card.cost} táp`) +
-      line('Terület (Radius)', sp.radius < 35 ? 'Kicsi' : sp.radius < 50 ? 'Közepes' : 'Nagy') +
-      line('Hátralökés (Knockback)', sp.pushback ? 'Igen' : 'Nem') +
-      line('Hatás (Effect)', card.typeLabel) +
-      line('Célpont (Targets)', card.targetLabel);
+    return line('Sebzés', Math.round(sp.damage * mult)) +
+      line('Toronysebzés', Math.round(sp.damage * mult * sp.towerDamage)) +
+      line('Tápköltség', `${card.cost} táp`) +
+      line('Hatótáv', sp.radius < 35 ? 'Kicsi' : sp.radius < 50 ? 'Közepes' : 'Nagy') +
+      line('Hátralökés', sp.pushback ? 'Igen' : 'Nem') +
+      line('Hatás', card.typeLabel) +
+      line('Célpont', card.targetLabel);
   }
   const u = card.unit;
   const dmg = u.damage ? Math.round(u.damage * mult) : 0;
   const dps = dmg && u.attackRate ? Math.round(dmg / u.attackRate) : '-';
   const atkSpeed = u.attackRate ? `${u.attackRate} s` : '-';
 
-  return line('Életerő (HP)', Math.round(u.hp * mult)) +
-    line('Sebzés (Damage)', dmg || '-') +
-    line('Másodpercenként (DPS)', dps) +
-    line('Támadási sebesség (Attack Rate)', atkSpeed) +
-    line('Mozgási sebesség (Speed)', card.speedLabel) +
-    line('Táp Költség (Elixir Cost)', `${card.cost} táp`) +
-    line('Darabszám (Count)', card.count) +
-    line('Célpont (Target Type)', card.targetLabel) +
-    line('Támadás típusa (Attack Type)', card.typeLabel) +
-    (card.ability ? line('Különleges Képesség (Ability)', card.ability) : '');
+  return line('Életerő', Math.round(u.hp * mult)) +
+    line('Sebzés', dmg || '-') +
+    line('DPS', dps) +
+    line('Támadási sebesség', atkSpeed) +
+    line('Mozgási sebesség', card.speedLabel) +
+    line('Tápköltség', `${card.cost} táp`) +
+    line('Darabszám', card.count) +
+    line('Célpont', card.targetLabel) +
+    line('Támadástípus', card.typeLabel) +
+    (card.ability ? line('Képesség', card.ability) : '');
 }
 
 function closeCardModal() {

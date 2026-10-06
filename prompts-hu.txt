@@ -181,3 +181,20 @@ Folytasd, ne hagyd abba a munkát, amíg teljesen kész nincs, aztán ÍRD KI, H
 ---
 
 Oké, csinálj belőle egy .apk-t és optimalizáld az apk-t telefonra, és csinálj egy lépésről lépésre szóló útmutatót, hogyan tudom beállítani a szervert egy netlify domainen, és az apk-ban automatikusan csatlakozzon a netlify-hoz, hogy a többjátékos mód működjön, és építs szerver verziót egy külön mappába, ha szükséges
+
+---
+
+A felület nagyon hibás, tedd tisztává a felületet, javíts ki minden hibát
+
+---
+
+készíts egy teljes értékű webes verziót az .apk alkalmazásból, és frissítsd az apk-t a legújabbra
+
+---
+
+Folytasd
+
+---
+
+hogyan tudom közzétenni a webes verziót a netlify-on
+

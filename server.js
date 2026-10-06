@@ -75,17 +75,86 @@ function getOrCreatePlayer(id, name, clientCups) {
   return players[id];
 }
 
+// Dynamic Season & Live Content Configuration
+const currentSeason = {
+  id: 1,
+  number: 1,
+  name: '1. Szezon: Farm Lázadás',
+  subtitle: 'A háziállatok visszavágnak! Gyűjts trófeákat a szezonális jutalmakért!',
+  badge: '🌾',
+  themeColor: '#ffb03a',
+  endsAt: Date.now() + 25 * 24 * 60 * 60 * 1000,
+  boostedCard: 'rooster',
+  boostedBonusText: 'Kakas: +15% támadási sebesség és sebzés a szezonban!',
+  version: '1.2.0',
+  minVersion: '1.0.0',
+  updateNotes: 'Szezon Pass rendszer, javított mobil reszponzivitás és közvetlen APK multiplayer szerver kapcsolat!',
+  announcement: 'Üdv az 1. Szezonban! Versenyezz meccskeresőben, szerezz kupákat és nyisd ki az új szezonális ládákat!',
+  tiers: [
+    { tier: 1, trophies: 20, rewardType: 'gold', amount: 150, title: '150 Arany' },
+    { tier: 2, trophies: 50, rewardType: 'gems', amount: 25, title: '25 Drágakő' },
+    { tier: 3, trophies: 100, rewardType: 'chest', chestType: 'small', amount: 1, title: 'Kis Láda' },
+    { tier: 4, trophies: 200, rewardType: 'gold', amount: 350, title: '350 Arany' },
+    { tier: 5, trophies: 350, rewardType: 'chest', chestType: 'medium', amount: 1, title: 'Közepes Láda' },
+    { tier: 6, trophies: 500, rewardType: 'gems', amount: 60, title: '60 Drágakő' },
+    { tier: 7, trophies: 750, rewardType: 'gold', amount: 800, title: '800 Arany' },
+    { tier: 8, trophies: 1000, rewardType: 'chest', chestType: 'large', amount: 1, title: 'Nagy Láda' },
+    { tier: 9, trophies: 1500, rewardType: 'gems', amount: 150, title: '150 Drágakő' },
+    { tier: 10, trophies: 2000, rewardType: 'champion', title: 'Bajnok Ládája (1200 Arany + 150 Drágakő)' }
+  ]
+};
+
 // API health endpoint
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     game: 'Állati Aréna (Animal Clash)',
+    version: currentSeason.version,
     activeRooms: Object.keys(rooms).length,
     searchingPlayers: matchmakingQueue.length,
     connectedSockets: wss.clients.size,
     totalRegisteredPlayers: Object.keys(players).length,
     timestamp: Date.now()
   });
+});
+
+// Dynamic Season API endpoint
+app.get('/api/season', (req, res) => {
+  res.json({
+    season: currentSeason,
+    timestamp: Date.now()
+  });
+});
+
+// App Version & Update endpoint
+app.get('/api/version', (req, res) => {
+  res.json({
+    version: currentSeason.version,
+    minVersion: currentSeason.minVersion,
+    updateNotes: currentSeason.updateNotes,
+    timestamp: Date.now()
+  });
+});
+
+// Season tier claim endpoint
+app.post('/api/season/claim', (req, res) => {
+  const { playerId, tier } = req.body || {};
+  const tierNum = parseInt(tier, 10);
+  const tierDef = currentSeason.tiers.find(t => t.tier === tierNum);
+  if (!tierDef) {
+    return res.status(400).json({ error: 'Érvénytelen szint!' });
+  }
+  const p = players[playerId];
+  if (!p || p.cups < tierDef.trophies) {
+    return res.status(400).json({ error: 'Nincs elég kupád ehhez a szinthez!' });
+  }
+  if (!p.claimedTiers) p.claimedTiers = [];
+  if (p.claimedTiers.includes(tierNum)) {
+    return res.status(400).json({ error: 'Ezt a jutalmat már kiváltottad!' });
+  }
+  p.claimedTiers.push(tierNum);
+  savePlayers();
+  res.json({ success: true, tier: tierNum, reward: tierDef });
 });
 
 app.get('/api/leaderboard', (req, res) => {
@@ -243,10 +312,11 @@ wss.on('connection', (ws) => {
   ws.isHost = false;
   ws.playerId = null;
 
-  // Inform newly connected client of online players
+  // Inform newly connected client of online players and current season
   ws.send(JSON.stringify({
     type: 'connected',
-    online: wss.clients.size
+    online: wss.clients.size,
+    season: currentSeason
   }));
 
   ws.on('message', (message) => {
@@ -278,6 +348,49 @@ wss.on('connection', (ws) => {
 
 function handleMessage(ws, data) {
   switch (data.type) {
+    // --- SEASON DATA & SYNC ---
+    case 'get_season': {
+      ws.send(JSON.stringify({
+        type: 'season_info',
+        season: currentSeason,
+        serverTime: Date.now()
+      }));
+      break;
+    }
+
+    case 'claim_season_tier': {
+      const tierNum = parseInt(data.tier, 10);
+      const tierDef = currentSeason.tiers.find(t => t.tier === tierNum);
+      const playerId = data.playerId || ws.playerId;
+      const p = players[playerId];
+      if (!tierDef || !p || p.cups < tierDef.trophies) {
+        ws.send(JSON.stringify({
+          type: 'claim_season_result',
+          success: false,
+          message: 'Nincs elég kupád ehhez a szinthez!'
+        }));
+        return;
+      }
+      if (!p.claimedTiers) p.claimedTiers = [];
+      if (p.claimedTiers.includes(tierNum)) {
+        ws.send(JSON.stringify({
+          type: 'claim_season_result',
+          success: false,
+          message: 'Ezt a jutalmat már kiváltottad!'
+        }));
+        return;
+      }
+      p.claimedTiers.push(tierNum);
+      savePlayers();
+      ws.send(JSON.stringify({
+        type: 'claim_season_result',
+        success: true,
+        tier: tierNum,
+        reward: tierDef
+      }));
+      break;
+    }
+
     // --- MATCHMAKING SEARCH MODE ---
     case 'find_match': {
       const playerId = data.playerId || 'player_' + Math.random().toString(36).substr(2, 9);

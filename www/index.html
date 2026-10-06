@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Állati Aréna</title>
+  <meta name="description" content="Állati Aréna – Clash Royale stílusú stratégiai kártyajáték böngészőben. Építs paklit, harcolj arénákban, nyiss ládákat!">
+  <meta name="keywords" content="clash royale, kártyajáték, böngészős játék, arena, online, multiplayer">
   <link rel="icon" type="image/png" href="icon.png">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="manifest" href="manifest.json">
@@ -23,6 +25,10 @@
         <div class="gold-pill trophy-pill"><span class="icon" data-icon="trophy"></span><span id="trophy-amount">0</span></div>
         <div class="gold-pill gem-pill"><span class="icon" data-icon="gem"></span><span id="gem-amount">120</span></div>
         <div class="gold-pill"><span class="icon" data-icon="gold"></span><span id="gold-amount">0</span></div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-sound-toggle" class="header-icon-btn" title="Hang némítása (M)"><span class="icon" data-icon="sound_on"></span></button>
+        <button id="btn-fullscreen-toggle" class="header-icon-btn" title="Teljes képernyő (F)"><span class="icon" data-icon="fullscreen"></span></button>
       </div>
     </header>
 
@@ -69,10 +75,10 @@
           <!-- Mode Switch Toggle -->
           <div class="mp-mode-toggle" id="mp-mode-toggle">
             <button type="button" class="mp-toggle-btn active" id="btn-toggle-quick" data-mode="quick">
-              <span class="icon" data-icon="search"></span> 🔍 Gyors Meccs
+              <span class="icon" data-icon="search"></span> Gyors Meccs
             </button>
             <button type="button" class="mp-toggle-btn" id="btn-toggle-code" data-mode="code">
-              <span class="icon" data-icon="lock"></span> 🔑 Kódos Szoba
+              <span class="icon" data-icon="lock"></span> Kódos Szoba
             </button>
           </div>
 
@@ -84,9 +90,8 @@
                 <span class="mp-cups-val" id="mp-player-cups">0</span>
                 <span class="mp-cups-lbl">Kupa</span>
               </div>
-              <div class="mp-status-pill" id="mp-quick-status-pill">
-                <span class="status-dot connecting" id="mp-quick-dot"></span>
-                <span id="mp-quick-status-txt">Szerver kapcsolat...</span>
+              <div class="mp-league-badge" id="mp-player-league">
+                <span>⚔️ Online Aréna</span>
               </div>
             </div>
 
@@ -251,6 +256,9 @@
   <script src="js/challenges.js"></script>
   <script src="js/chest-animation.js"></script>
   <script src="js/multiplayer.js"></script>
+  <script src="js/season.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/web-controls.js"></script>
   <script src="js/ui.js"></script>
   <script>
     if ('serviceWorker' in navigator) {

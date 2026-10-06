@@ -1,12 +1,18 @@
 // Tabs, gold display, lobby (arena + chests), chest opening and switching into / out of battle
 
 function showTab(name) {
+  const content = document.getElementById('content');
+  if (content) content.scrollTop = 0;
   document.querySelectorAll('.tab-page').forEach(p => p.classList.toggle('active', p.id === 'page-' + name));
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
   if (name === 'deck') renderDeckPage();
   if (name === 'shop') renderShop();
   if (name === 'challenge') renderChallenges();
-  if (name === 'battle') { renderChests(); renderArena(); }
+  if (name === 'battle') {
+    renderChests();
+    renderArena();
+    if (typeof updatePlayerCupsUI === 'function') updatePlayerCupsUI();
+  }
 }
 
 function updateGold() {
@@ -204,6 +210,7 @@ function closeBattle() {
   document.getElementById('battle-screen').classList.add('hidden');
   updateGold();
   if (typeof updatePlayerCupsUI === 'function') updatePlayerCupsUI();
+  if (typeof renderSeasonLobbyCard === 'function') renderSeasonLobbyCard();
   showTab(fromChallenge ? 'challenge' : 'battle');
 }
 
@@ -213,6 +220,7 @@ applyIcons(document);
 updateGold();
 renderChests();
 setInterval(tickChests, 1000);
+if (typeof initSeasonSystem === 'function') initSeasonSystem();
 
 renderArena();
 document.getElementById('btn-arena-prev').addEventListener('click', () => { viewedArena--; renderArena(); });

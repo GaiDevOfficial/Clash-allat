@@ -91,11 +91,52 @@ const ICONS = {
     <rect x="8" y="27" width="48" height="6" fill="#ffc93c" stroke="#4a2c12" stroke-width="2"/>
     <rect x="26" y="26" width="12" height="14" rx="2" fill="#ffc93c" stroke="#4a2c12" stroke-width="2"/>
     <circle cx="32" cy="33" r="2" fill="#4a2c12"/></svg>`,
+  search: `<svg viewBox="0 0 64 64">
+    <circle cx="28" cy="28" r="16" fill="none" stroke="currentColor" stroke-width="5"/>
+    <line x1="40" y1="40" x2="56" y2="56" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+  </svg>`,
+
+  check: `<svg viewBox="0 0 64 64">
+    <circle cx="32" cy="32" r="26" fill="#5cc24a" stroke="#2f6a1d" stroke-width="4"/>
+    <path d="M19 33 L28 42 L46 22" fill="none" stroke="#fff6e0" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
+
+  gear: `<svg viewBox="0 0 64 64">
+    <circle cx="32" cy="32" r="9" fill="none" stroke="currentColor" stroke-width="4"/>
+    <path d="M29 6 h6 l2 7 6 3 6-5 5 5-5 6 3 6 7 2 v6 l-7 2-3 6 5 6-5 5-6-5-6 3-2 7 h-6 l-2-7-6-3-6 5-5-5 5-6-3-6-7-2 v-6 l7-2 3-6-5-6 5-5 6 5 6-3 z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+  </svg>`,
+
+  cross: `<svg viewBox="0 0 64 64">
+    <circle cx="32" cy="32" r="26" fill="#e74c3c" stroke="#962d22" stroke-width="3"/>
+    <line x1="20" y1="20" x2="44" y2="44" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+    <line x1="44" y1="20" x2="20" y2="44" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+  </svg>`,
+
+  sound_on: `<svg viewBox="0 0 64 64">
+    <path d="M12 24 h10 l14 -12 v40 l-14 -12 h-10 z" fill="#ffc93c" stroke="#5a3515" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M42 22 c4 6 4 14 0 20" fill="none" stroke="#fff6e0" stroke-width="4" stroke-linecap="round"/>
+    <path d="M48 16 c8 10 8 22 0 32" fill="none" stroke="#fff6e0" stroke-width="4" stroke-linecap="round"/>
+  </svg>`,
+
+  sound_off: `<svg viewBox="0 0 64 64">
+    <path d="M12 24 h10 l14 -12 v40 l-14 -12 h-10 z" fill="#c9b99a" stroke="#5a3515" stroke-width="3" stroke-linejoin="round"/>
+    <line x1="10" y1="10" x2="54" y2="54" stroke="#e74c3c" stroke-width="5" stroke-linecap="round"/>
+  </svg>`,
+
+  fullscreen: `<svg viewBox="0 0 64 64">
+    <path d="M12 24 V12 H24 M52 24 V12 H40 M12 40 V52 H24 M52 40 V52 H40" fill="none" stroke="#ffc93c" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
 };
 
 // Fill every [data-icon] element inside root with its SVG
 function applyIcons(root) {
+  if (!root) return;
   root.querySelectorAll('[data-icon]').forEach(el => {
-    el.innerHTML = ICONS[el.dataset.icon];
+    const iconName = el.dataset.icon;
+    if (ICONS[iconName]) {
+      el.innerHTML = ICONS[iconName];
+    } else {
+      el.innerHTML = '';
+    }
   });
 }

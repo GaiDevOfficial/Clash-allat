@@ -66,7 +66,11 @@ function createAllTowers() {
 
 function createUnit(cardId, team, x, y, level = 1) {
   const s = CARDS[cardId].unit;
-  const mult = levelMultiplier(level);   // higher level = more health and damage
+  let mult = levelMultiplier(level);   // higher level = more health and damage
+  if (typeof getSeasonCardBoost === 'function') {
+    const boost = getSeasonCardBoost(cardId);
+    if (boost.boosted) mult *= boost.multiplier;
+  }
   const hp = Math.round(s.hp * mult);
   return {
     isTower: false, cardId, team, x, y, level,
@@ -154,6 +158,7 @@ function startBattle(options = {}) {
     crowns: { player: 0, enemy: 0 },
     over: false,
     towers: createAllTowers(),
+    honeyPuddles: [],
   };
   selectedSlot = null;
   renderHand();
@@ -169,6 +174,43 @@ function playCard(cardId, team, x, y) {
   // In challenges both sides play at the same level
   const level = team === PLAYER && !battle.challenge ? save.cards[cardId].level : battle.enemyLevel;
   if (card.spell) { castSpell(card, team, x, y, level); return; }
+
+  // Hód (Beaver): builds a 700 HP gate on the nearest bridge!
+  if (card.unit && card.unit.buildsGate) {
+    const bridgeX = closestLane(x);
+    // Player gate is on player edge of bridge (+8), enemy on enemy edge (-8)
+    const bridgeY = (ARENA.riverTop + ARENA.riverBottom) / 2 + (team === PLAYER ? 8 : -8);
+    // Remove existing friendly gate on this bridge
+    battle.units = battle.units.filter(u => !(u.isGate && u.team === team && Math.abs(u.x - bridgeX) < 25));
+    battle.units.push({
+      isTower: false,
+      isGate: true,
+      building: true,
+      cardId: 'beaver_gate',
+      team: team,
+      x: bridgeX,
+      y: bridgeY,
+      level: level,
+      hp: 700,
+      maxHp: 700,
+      speed: 0,
+      range: 0,
+      attackRate: 999,
+      radius: 20,
+      sight: 0,
+      targets: 'none',
+      airMultiplier: 1,
+      projectile: null,
+      lifetime: 300,
+      lifeLeft: 300,
+      poisons: [],
+      stunTimer: 0,
+      honeyTimer: 0,
+      dead: false
+    });
+    battle.popups.push({ x: bridgeX, y: bridgeY - 20, text: '🛡️ GÁT ÉPÜLT! (700 ÉP)', life: 2.2 });
+  }
+
   for (let i = 0; i < card.count; i++) {
     const [ox, oy] = SPAWN_OFFSETS[i % SPAWN_OFFSETS.length];
     battle.units.push(createUnit(cardId, team, x + ox, y + oy * team, level));
@@ -218,6 +260,31 @@ function spellImpact(sp) {
     }
     if (def.slow) e.slowTimer = def.slow.duration;
   }
+
+  // Honey spell: drops golden honey puddle and traps enemy units
+  if (sp.kind === 'honey') {
+    if (!battle.honeyPuddles) battle.honeyPuddles = [];
+    const puddle = {
+      x: sp.x,
+      y: sp.y,
+      radius: sp.radius || 40,
+      team: sp.team,
+      duration: (def && def.duration) || 12.0,
+      t: 0,
+      trappedUnits: new Set()
+    };
+    battle.honeyPuddles.push(puddle);
+    for (const e of battle.units) {
+      if (e.team !== sp.team && !e.dead && !e.flying) {
+        if (Math.hypot(e.x - sp.x, e.y - sp.y) <= (sp.radius || 40) + e.radius) {
+          e.honeyTimer = 3.0; // 3 seconds total freeze
+          puddle.trappedUnits.add(e);
+        }
+      }
+    }
+    battle.popups.push({ x: sp.x, y: sp.y - 15, text: '🍯 RAGADÓS MÉZ!', life: 1.8 });
+  }
+
   battle.impacts.push({ kind: sp.kind, x: sp.x, y: sp.y, radius: sp.radius, t: 0 });
 }
 
@@ -306,6 +373,18 @@ function findTarget(u) {
   const buildingsOnly = u.targets === 'buildings';
   let best = null;
   let bestD = Infinity;
+
+  // Check if an enemy gate blocks this bridge
+  const bridgeX = closestLane(u.x);
+  const enemyGate = battle.units.find(g => g.isGate && !g.dead && g.team !== u.team && Math.abs(g.x - bridgeX) < 25);
+  // If enemy gate exists and ground unit has not passed it, unit targets the gate
+  if (enemyGate && !u.flying && !u.jumpsRiver && Math.abs(u.x - bridgeX) < 45) {
+    const notPassed = u.team === PLAYER ? (u.y > enemyGate.y - 15) : (u.y < enemyGate.y + 15);
+    if (notPassed && Math.abs(u.y - 320) < 130) {
+      return enemyGate;
+    }
+  }
+
   for (const e of battle.units) {
     if (e.team === u.team || e.dead || !canTarget(u, e)) continue;
     const d = distance(u, e);
@@ -328,6 +407,12 @@ function nextWaypoint(u, target) {
   if (!inRiver && sideOf(u.y) === sideOf(target.y)) return target;
 
   const bridgeX = closestLane(u.x);
+  const enemyGate = battle.units.find(g => g.isGate && !g.dead && g.team !== u.team && Math.abs(g.x - bridgeX) < 25);
+  if (enemyGate && !u.flying && !u.jumpsRiver) {
+    // Enemy gate blocks the bridge! Unit must stop at the gate and destroy it
+    return enemyGate;
+  }
+
   const x = Math.max(bridgeX - ARENA.bridgeHalf, Math.min(bridgeX + ARENA.bridgeHalf, u.x));
   const goingUp = target.y < u.y;
   const acrossY = goingUp ? ARENA.riverTop - 12 : ARENA.riverBottom + 12;
@@ -338,6 +423,11 @@ function nextWaypoint(u, target) {
 
 // Buildings don't move or attack: they lose health over time and may release animals
 function updateBuilding(u, dt) {
+  // Gate: doesn't decay from lifetime, enemy has to destroy it!
+  if (u.isGate) {
+    return;
+  }
+
   // Wheat field: gives feed to its owner every few seconds
   if (u.produce) {
     u.produceTimer -= dt;
@@ -358,6 +448,13 @@ function updateBuilding(u, dt) {
 function updateUnit(u, dt) {
   if (u.building) { updateBuilding(u, dt); return; }
   if (u.leapState) { updateLeap(u, dt); return; }
+
+  // Trapped in Honey: cannot move, attack or do anything for 3s
+  if (u.honeyTimer > 0) {
+    u.honeyTimer = Math.max(0, u.honeyTimer - dt);
+    u.moving = false;
+    return;
+  }
 
   // Stunned: electric shock stops movement and attacks
   if (u.stunTimer > 0) {
@@ -726,6 +823,9 @@ function dealDamage(target, amount) {
 
 function onUnitDeath(u) {
   spawnSmoke(u.x, u.y - 8, u.radius);
+  if (u.isGate) {
+    battle.popups.push({ x: u.x, y: u.y - 20, text: '💥 GÁT LEROMBOLVA!', life: 1.8 });
+  }
   if (u.deathFeed) addFeed(u.team, u.deathFeed, u.x, u.y - 20);
   // Some buildings release animals when destroyed (beehive)
   for (let i = 0; i < u.spawnOnDeath; i++) {
@@ -756,6 +856,8 @@ function separateUnits() {
       const b = units[j];
       if (a.flying !== b.flying || b.leapState) continue;   // air and ground don't bump
       if (a.ignoresCollision || b.ignoresCollision) continue; // Snake slithers past frontline tanks!
+      // Friendly gate can be crossed by the team who placed it!
+      if ((a.isGate && a.team === b.team) || (b.isGate && b.team === a.team)) continue;
       const d = distance(a, b);
       const min = a.radius + b.radius;
       if (d > 0 && d < min) {
@@ -911,6 +1013,25 @@ function update(dt) {
   updateAI(dt);
   updateModifiers(dt);
   updateSpells(dt);
+
+  // Update honey puddles
+  if (battle.honeyPuddles) {
+    for (const p of battle.honeyPuddles) {
+      p.t += dt;
+      if (!p.trappedUnits) p.trappedUnits = new Set();
+      for (const u of battle.units) {
+        if (u.team !== p.team && !u.dead && !u.flying && !p.trappedUnits.has(u)) {
+          if (distance(u, p) <= p.radius + u.radius) {
+            u.honeyTimer = 3.0; // 3 seconds freeze/immobility
+            p.trappedUnits.add(u);
+            battle.popups.push({ x: u.x, y: u.y - 15, text: '🍯 RAGAD!', life: 1.2 });
+          }
+        }
+      }
+    }
+    battle.honeyPuddles = battle.honeyPuddles.filter(p => p.t < p.duration);
+  }
+
   battle.units.forEach(u => updateUnit(u, dt));
   battle.towers.forEach(t => updateTower(t, dt));
   updateProjectiles(dt);
@@ -1027,6 +1148,11 @@ function render(time) {
   // Spell aftermath lies on the ground under the animals
   battle.impacts.forEach(im => drawSpellImpact(ctx, im));
 
+  // Honey puddles on the arena ground
+  if (battle.honeyPuddles) {
+    battle.honeyPuddles.forEach(p => drawHoneyPuddle(ctx, p, time));
+  }
+
   // Draw towers and ground units sorted by y so nearer things overlap farther ones,
   // then flyers on top of everything
   const ground = battle.units.filter(u => !u.flying);
@@ -1068,6 +1194,7 @@ function render(time) {
 
   // Projectiles: eggs from hens, corn kernels from towers
   for (const p of battle.projectiles) {
+    drawObjectShadow(ctx, p.x + 1, p.y + 10, 4, 2, 0.25);
     if (p.kind === 'egg') {
       drawEgg(ctx, p.x, p.y);
     } else {

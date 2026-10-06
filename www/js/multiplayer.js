@@ -13,6 +13,7 @@ let searchTimerInterval = null;
 let searchSeconds = 0;
 
 // Smart Server URL resolution for Web and Android Native APK
+// Smart Server URL resolution for Web and Android Native APK
 function getMultiplayerServerUrl() {
   const customUrl = localStorage.getItem('animal_clash_server_url');
   if (customUrl && customUrl.trim()) {
@@ -25,33 +26,33 @@ function getMultiplayerServerUrl() {
     return url;
   }
 
-  // Detect Android Native APK (Capacitor/Cordova/file protocol or empty host)
-  const isApk = (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
-                window.location.protocol === 'capacitor:' ||
-                window.location.protocol === 'file:' ||
-                !window.location.host ||
-                window.location.host === 'localhost';
+  // Detect Android Native APK (Capacitor/Cordova/file protocol or WebView)
+  const isCapacitorNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const isApkScheme = window.location.protocol === 'capacitor:' || window.location.protocol === 'file:';
+  const isLocalDev = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port === '3000';
 
-  if (isApk && window.location.protocol !== 'http:' && window.location.protocol !== 'https:') {
-    return 'wss://allati-arena.onrender.com';
+  // Desktop browser local development on port 3000:
+  if (isLocalDev && !isCapacitorNative && !isApkScheme) {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${protocol}//${window.location.host}`;
   }
 
-  // Web fallback (relative to current domain or localhost:3000)
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const host = window.location.host || 'localhost:3000';
-  return `${protocol}//${host}`;
+  // Android Native APK, Netlify, Render, and any remote production client:
+  return 'wss://allati-arena.onrender.com';
+}
+
+function getServerHttpUrl() {
+  const wsUrl = getMultiplayerServerUrl();
+  if (wsUrl.startsWith('wss://')) return wsUrl.replace('wss://', 'https://');
+  if (wsUrl.startsWith('ws://')) return wsUrl.replace('ws://', 'http://');
+  return 'https://allati-arena.onrender.com';
 }
 
 function updateServerStatusUI(status, msg) {
   const dot = document.getElementById('mp-status-indicator');
   const text = document.getElementById('mp-status-text');
-  const quickDot = document.getElementById('mp-quick-dot');
-  const quickText = document.getElementById('mp-quick-status-txt');
-
   if (dot) dot.className = `status-dot ${status}`;
   if (text) text.textContent = msg;
-  if (quickDot) quickDot.className = `status-dot ${status}`;
-  if (quickText) quickText.textContent = msg;
 }
 
 function updatePlayerCupsUI() {
@@ -59,9 +60,44 @@ function updatePlayerCupsUI() {
   if (cupsEl && typeof save !== 'undefined') {
     cupsEl.textContent = save.trophies || 0;
   }
+  const leagueEl = document.getElementById('mp-player-league');
+  if (leagueEl && typeof highestArena === 'function' && typeof ARENAS !== 'undefined') {
+    const aId = highestArena();
+    const aName = ARENAS[aId] ? ARENAS[aId].name : 'Farm';
+    leagueEl.innerHTML = `<span>⚔️ ${aId}. Aréna (${aName})</span>`;
+  }
 }
 
 let mpReconnectTimer = null;
+let isWakingUpRender = false;
+
+function checkRenderServerWakeup() {
+  const httpUrl = getServerHttpUrl();
+  if (httpUrl.includes('localhost')) return;
+
+  const timer = setTimeout(() => {
+    if (!mpSocket || mpSocket.readyState !== WebSocket.OPEN) {
+      updateServerStatusUI('connecting', 'Render szerver ébresztése... (kérlek várj ~20-30mp)');
+      isWakingUpRender = true;
+    }
+  }, 2000);
+
+  fetch(httpUrl + '/api/health')
+    .then(r => r.json())
+    .then(data => {
+      clearTimeout(timer);
+      if (isWakingUpRender) {
+        updateServerStatusUI('online', 'Online szerver aktív');
+        isWakingUpRender = false;
+      }
+      if (!mpSocket || mpSocket.readyState !== WebSocket.OPEN) {
+        initMultiplayerSocket();
+      }
+    })
+    .catch(() => {
+      clearTimeout(timer);
+    });
+}
 
 function initMultiplayerSocket() {
   if (mpSocket && (mpSocket.readyState === WebSocket.OPEN || mpSocket.readyState === WebSocket.CONNECTING)) {
@@ -70,6 +106,9 @@ function initMultiplayerSocket() {
 
   const wsUrl = getMultiplayerServerUrl();
   updateServerStatusUI('connecting', 'Kapcsolódás szerverhez...');
+
+  // Start ping to wake up free tier if needed
+  checkRenderServerWakeup();
 
   try {
     mpSocket = new WebSocket(wsUrl);
@@ -89,6 +128,9 @@ function initMultiplayerSocket() {
     }
     // Update player cups in UI
     updatePlayerCupsUI();
+
+    // Request season data
+    mpSocket.send(JSON.stringify({ type: 'get_season' }));
   };
 
   mpSocket.onmessage = (event) => {
@@ -102,7 +144,7 @@ function initMultiplayerSocket() {
 
   mpSocket.onclose = () => {
     console.log('Disconnected from multiplayer server.');
-    updateServerStatusUI('offline', '🔴 Nincs kapcsolat');
+    updateServerStatusUI('offline', 'Nincs kapcsolat (újracsatlakozás...)');
     if (isSearchingMatch) {
       cancelQuickMatchSearch(false);
     }
@@ -111,7 +153,7 @@ function initMultiplayerSocket() {
 
   mpSocket.onerror = (e) => {
     console.warn('WebSocket error:', e);
-    updateServerStatusUI('offline', '🔴 Szerver hiba');
+    updateServerStatusUI('offline', 'Szerver hiba');
   };
 }
 
@@ -122,11 +164,28 @@ function scheduleMpReconnect() {
     if (!isMultiplayerMatch && (!mpSocket || mpSocket.readyState === WebSocket.CLOSED)) {
       initMultiplayerSocket();
     }
-  }, 5000);
+  }, 4000);
 }
 
 function handleServerMessage(data) {
   switch (data.type) {
+    // --- SERVER INIT / SEASON ---
+    case 'connected':
+    case 'init_sync':
+    case 'season_info': {
+      if (data.season && typeof applySeasonData === 'function') {
+        applySeasonData(data.season);
+      }
+      break;
+    }
+
+    case 'claim_season_result': {
+      if (!data.success && data.message) {
+        alert(data.message);
+      }
+      break;
+    }
+
     // --- MATCHMAKING STATUS ---
     case 'search_status': {
       const infoEl = document.getElementById('mp-search-queue-info');
@@ -152,8 +211,10 @@ function handleServerMessage(data) {
       closeMultiplayerModals();
 
       if (isSearchingMatch || data.isMatchmaking) {
+        // Show Match Found Banner with animation
         showMatchFoundBanner(data);
       } else {
+        // Direct room start
         startMultiplayerBattle({
           role: mpRole,
           code: data.code,
@@ -172,7 +233,10 @@ function handleServerMessage(data) {
         save.trophies = data.newCups;
         if (typeof saveGame === 'function') saveGame();
         updatePlayerCupsUI();
+        if (typeof renderSeasonLobbyCard === 'function') renderSeasonLobbyCard();
+        if (typeof updateGold === 'function') updateGold();
 
+        // Update result dialog if visible
         const chestInfo = document.getElementById('result-chest');
         if (chestInfo && data.delta !== undefined) {
           const sign = data.delta > 0 ? '+' : '';
@@ -244,6 +308,7 @@ function switchMultiplayerMode(mode) {
     if (panelCode) panelCode.classList.remove('hidden');
     if (panelQuick) panelQuick.classList.add('hidden');
     localStorage.setItem('animal_clash_mp_mode', 'code');
+    // If we were searching in quick mode, cancel it
     if (isSearchingMatch) cancelQuickMatchSearch(true);
   } else {
     if (btnQuick) btnQuick.classList.add('active');
@@ -272,6 +337,7 @@ function startQuickMatchSearch() {
   if (timerEl) timerEl.textContent = '00:00';
   if (queueInfo) queueInfo.textContent = 'Kapcsolódás a meccskeresőhöz...';
 
+  // Start search timer
   if (searchTimerInterval) clearInterval(searchTimerInterval);
   searchTimerInterval = setInterval(() => {
     searchSeconds++;
@@ -330,6 +396,7 @@ function resetSearchUI() {
   if (banner) banner.classList.add('hidden');
 }
 
+// Show found banner with brief 2-second suspense then launch battle
 function showMatchFoundBanner(data) {
   isSearchingMatch = false;
   if (searchTimerInterval) {
@@ -438,6 +505,7 @@ function broadcastEmote(emote) {
   }));
 }
 
+// Notify server of battle end so cups and stats update
 function notifyMultiplayerBattleEnd(p, e) {
   if (!isMultiplayerMatch || !mpSocket || mpSocket.readyState !== WebSocket.OPEN) return;
   const winnerRole = p > e ? mpRole : (p < e ? (mpRole === 'host' ? 'guest' : 'host') : 'draw');
@@ -449,6 +517,7 @@ function notifyMultiplayerBattleEnd(p, e) {
   }));
 }
 
+// Start live 1v1 battle
 function startMultiplayerBattle(opts) {
   isMultiplayerMatch = true;
   document.getElementById('battle-screen').classList.remove('hidden');
@@ -470,6 +539,7 @@ function showFloatingEmote(team, emoteText) {
   }
 }
 
+// Modals for 4-Digit Room Code
 function showHostWaitingModal(code) {
   let modal = document.getElementById('mp-host-modal');
   if (!modal) {
@@ -581,23 +651,27 @@ function showServerConfigModal() {
 }
 
 function setupMultiplayerEventListeners() {
+  // Mode switch buttons
   const btnToggleQuick = document.getElementById('btn-toggle-quick');
   const btnToggleCode = document.getElementById('btn-toggle-code');
   if (btnToggleQuick) btnToggleQuick.onclick = () => switchMultiplayerMode('quick');
   if (btnToggleCode) btnToggleCode.onclick = () => switchMultiplayerMode('code');
 
+  // Search mode buttons
   const btnFindMatch = document.getElementById('btn-find-match');
   if (btnFindMatch) btnFindMatch.onclick = startQuickMatchSearch;
 
   const btnCancelSearch = document.getElementById('btn-cancel-search');
   if (btnCancelSearch) btnCancelSearch.onclick = () => cancelQuickMatchSearch(true);
 
+  // Private room buttons
   const btnHost = document.getElementById('btn-mp-host');
   if (btnHost) btnHost.onclick = createMultiplayerRoom;
 
   const btnJoin = document.getElementById('btn-mp-join');
   if (btnJoin) btnJoin.onclick = showJoinInputModal;
 
+  // Server config modal buttons
   const btnCfg = document.getElementById('btn-mp-server-cfg');
   if (btnCfg) btnCfg.onclick = showServerConfigModal;
 
@@ -635,9 +709,11 @@ function setupMultiplayerEventListeners() {
     };
   }
 
+  // Restore preferred mode from storage
   const savedMode = localStorage.getItem('animal_clash_mp_mode') || 'quick';
   switchMultiplayerMode(savedMode);
 
+  // Update cups in UI
   updatePlayerCupsUI();
 }
 
@@ -647,4 +723,5 @@ if (document.readyState === 'loading') {
   setupMultiplayerEventListeners();
 }
 
+// Auto initialize on load
 initMultiplayerSocket();

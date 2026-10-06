@@ -179,3 +179,20 @@ Continue do not stop working until it is completely done then WRITE DONE and wri
 ---
 
 Ok make a .apk out of it and optimize the apk for phone and make a step by step guide how I can set up the server on a Netlify domain and in the apk it should connect to the Netlify automatically so the multiplayer works and build server version in a separate folder if necessary
+
+---
+
+The UI is very buggy make the ui clean fix all issues
+
+---
+
+make a fully fledged web version of the .apk app and update the apk to the latest
+
+---
+
+Continue
+
+---
+
+how can i deploy the web on netlify
+

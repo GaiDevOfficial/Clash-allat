@@ -19,12 +19,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// Serve static assets
+app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 
 // Lightweight JSON + In-Memory player profile storage
-// Render Free Tier Note: Ephemeral storage on Render Free sleeps after 15m idle and resets disk.
-// The device (client) is the authoritative offline-first storage in localStorage.
-// Server persists data/players.json during container runtime.
+// Render Free Tier Note: Containers on Render free tier sleep after 15m idle and reset disk.
+// Hence, clients store authoritative cups in localStorage and sync with server,
+// while server persists data/players.json during container lifecycle.
 const dataDir = path.join(__dirname, 'data');
 const playersFile = path.join(dataDir, 'players.json');
 let players = {};
@@ -47,7 +49,7 @@ function savePlayers() {
     }
     fs.writeFileSync(playersFile, JSON.stringify(players, null, 2), 'utf8');
   } catch (e) {
-    // Ephemeral disk fallback
+    // Fallback if disk is read-only
   }
 }
 
@@ -73,17 +75,86 @@ function getOrCreatePlayer(id, name, clientCups) {
   return players[id];
 }
 
-// Health check endpoint
+// Dynamic Season & Live Content Configuration
+const currentSeason = {
+  id: 1,
+  number: 1,
+  name: '1. Szezon: Farm Lázadás',
+  subtitle: 'A háziállatok visszavágnak! Gyűjts trófeákat a szezonális jutalmakért!',
+  badge: '🌾',
+  themeColor: '#ffb03a',
+  endsAt: Date.now() + 25 * 24 * 60 * 60 * 1000,
+  boostedCard: 'rooster',
+  boostedBonusText: 'Kakas: +15% támadási sebesség és sebzés a szezonban!',
+  version: '1.2.0',
+  minVersion: '1.0.0',
+  updateNotes: 'Szezon Pass rendszer, javított mobil reszponzivitás és közvetlen APK multiplayer szerver kapcsolat!',
+  announcement: 'Üdv az 1. Szezonban! Versenyezz meccskeresőben, szerezz kupákat és nyisd ki az új szezonális ládákat!',
+  tiers: [
+    { tier: 1, trophies: 20, rewardType: 'gold', amount: 150, title: '150 Arany' },
+    { tier: 2, trophies: 50, rewardType: 'gems', amount: 25, title: '25 Drágakő' },
+    { tier: 3, trophies: 100, rewardType: 'chest', chestType: 'small', amount: 1, title: 'Kis Láda' },
+    { tier: 4, trophies: 200, rewardType: 'gold', amount: 350, title: '350 Arany' },
+    { tier: 5, trophies: 350, rewardType: 'chest', chestType: 'medium', amount: 1, title: 'Közepes Láda' },
+    { tier: 6, trophies: 500, rewardType: 'gems', amount: 60, title: '60 Drágakő' },
+    { tier: 7, trophies: 750, rewardType: 'gold', amount: 800, title: '800 Arany' },
+    { tier: 8, trophies: 1000, rewardType: 'chest', chestType: 'large', amount: 1, title: 'Nagy Láda' },
+    { tier: 9, trophies: 1500, rewardType: 'gems', amount: 150, title: '150 Drágakő' },
+    { tier: 10, trophies: 2000, rewardType: 'champion', title: 'Bajnok Ládája (1200 Arany + 150 Drágakő)' }
+  ]
+};
+
+// API health endpoint
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     game: 'Állati Aréna (Animal Clash)',
+    version: currentSeason.version,
     activeRooms: Object.keys(rooms).length,
     searchingPlayers: matchmakingQueue.length,
     connectedSockets: wss.clients.size,
     totalRegisteredPlayers: Object.keys(players).length,
     timestamp: Date.now()
   });
+});
+
+// Dynamic Season API endpoint
+app.get('/api/season', (req, res) => {
+  res.json({
+    season: currentSeason,
+    timestamp: Date.now()
+  });
+});
+
+// App Version & Update endpoint
+app.get('/api/version', (req, res) => {
+  res.json({
+    version: currentSeason.version,
+    minVersion: currentSeason.minVersion,
+    updateNotes: currentSeason.updateNotes,
+    timestamp: Date.now()
+  });
+});
+
+// Season tier claim endpoint
+app.post('/api/season/claim', (req, res) => {
+  const { playerId, tier } = req.body || {};
+  const tierNum = parseInt(tier, 10);
+  const tierDef = currentSeason.tiers.find(t => t.tier === tierNum);
+  if (!tierDef) {
+    return res.status(400).json({ error: 'Érvénytelen szint!' });
+  }
+  const p = players[playerId];
+  if (!p || p.cups < tierDef.trophies) {
+    return res.status(400).json({ error: 'Nincs elég kupád ehhez a szinthez!' });
+  }
+  if (!p.claimedTiers) p.claimedTiers = [];
+  if (p.claimedTiers.includes(tierNum)) {
+    return res.status(400).json({ error: 'Ezt a jutalmat már kiváltottad!' });
+  }
+  p.claimedTiers.push(tierNum);
+  savePlayers();
+  res.json({ success: true, tier: tierNum, reward: tierDef });
 });
 
 app.get('/api/leaderboard', (req, res) => {
@@ -94,23 +165,12 @@ app.get('/api/leaderboard', (req, res) => {
   res.json(top);
 });
 
-app.get('/', (req, res) => {
-  res.send(`
-    <html>
-      <head><title>Állati Aréna - Multiplayer Game Server</title></head>
-      <body style="font-family: sans-serif; background: #2c1a0e; color: #fff; text-align: center; padding: 50px;">
-        <h1 style="color: #ffc93c;">🐾 Állati Aréna Multiplayer Server</h1>
-        <p style="color: #2ed573; font-weight: bold; font-size: 18px;">● Status: Online & Active</p>
-        <p>Active Rooms: <b>${Object.keys(rooms).length}</b></p>
-        <p>Searching Players in Queue: <b>${matchmakingQueue.length}</b></p>
-        <p>Connected Sockets: <b>${wss.clients.size}</b></p>
-      </body>
-    </html>
-  `);
-});
-
 // Multiplayer room storage
+// roomCode -> { code, host: ws, guest: ws, hostDeck, guestDeck, state, createdAt }
 const rooms = {};
+
+// Matchmaking Queue: list of players searching for opponent
+// items: { ws, playerId, playerName, cups, deck, arena, joinedAt }
 let matchmakingQueue = [];
 
 function generateRoomCode() {
@@ -126,17 +186,19 @@ function generateRoomCode() {
 function cleanExpiredRooms() {
   const now = Date.now();
   for (const code in rooms) {
-    if (now - rooms[code].createdAt > 30 * 60 * 1000) {
+    if (now - rooms[code].createdAt > 30 * 60 * 1000) { // 30 minutes
       delete rooms[code];
     }
   }
 }
 setInterval(cleanExpiredRooms, 60 * 1000);
 
-// Matchmaking algorithm
-// 1. If only 2 players are searching: pair them directly
-// 2. If more than 2: compare cups and pair closest ones
+// Matchmaking process
+// Requirements:
+// 1. If only just 2 players are searching on the server: they play directly!
+// 2. If more than 2 players are searching: compares how many cups they have and pairs the most similar ones!
 function processMatchmaking() {
+  // Filter out disconnected sockets
   matchmakingQueue = matchmakingQueue.filter(p => p.ws && p.ws.readyState === WebSocket.OPEN);
 
   if (matchmakingQueue.length < 2) {
@@ -158,9 +220,11 @@ function processMatchmaking() {
   let pair = null;
 
   if (matchmakingQueue.length === 2) {
+    // If only just 2 players are searching: pair them immediately
     pair = [matchmakingQueue[0], matchmakingQueue[1]];
     matchmakingQueue = [];
   } else {
+    // If there is more than 2: look at cups and pair the two with closest cup count!
     let minDiff = Infinity;
     let bestI = 0;
     let bestJ = 1;
@@ -210,6 +274,7 @@ function processMatchmaking() {
     p2.ws.roomCode = code;
     p2.ws.isHost = false;
 
+    // Send match_start to host
     p1.ws.send(JSON.stringify({
       type: 'match_start',
       isMatchmaking: true,
@@ -222,6 +287,7 @@ function processMatchmaking() {
       arena: rooms[code].arena
     }));
 
+    // Send match_start to guest
     p2.ws.send(JSON.stringify({
       type: 'match_start',
       isMatchmaking: true,
@@ -238,6 +304,7 @@ function processMatchmaking() {
   }
 }
 
+// Tick matchmaking every second
 setInterval(processMatchmaking, 1000);
 
 wss.on('connection', (ws) => {
@@ -245,9 +312,11 @@ wss.on('connection', (ws) => {
   ws.isHost = false;
   ws.playerId = null;
 
+  // Inform newly connected client of online players and current season
   ws.send(JSON.stringify({
     type: 'connected',
-    online: wss.clients.size
+    online: wss.clients.size,
+    season: currentSeason
   }));
 
   ws.on('message', (message) => {
@@ -260,6 +329,7 @@ wss.on('connection', (ws) => {
   });
 
   ws.on('close', () => {
+    // Remove from search queue if present
     matchmakingQueue = matchmakingQueue.filter(p => p.ws !== ws);
 
     if (ws.roomCode && rooms[ws.roomCode]) {
@@ -278,6 +348,50 @@ wss.on('connection', (ws) => {
 
 function handleMessage(ws, data) {
   switch (data.type) {
+    // --- SEASON DATA & SYNC ---
+    case 'get_season': {
+      ws.send(JSON.stringify({
+        type: 'season_info',
+        season: currentSeason,
+        serverTime: Date.now()
+      }));
+      break;
+    }
+
+    case 'claim_season_tier': {
+      const tierNum = parseInt(data.tier, 10);
+      const tierDef = currentSeason.tiers.find(t => t.tier === tierNum);
+      const playerId = data.playerId || ws.playerId;
+      const p = players[playerId];
+      if (!tierDef || !p || p.cups < tierDef.trophies) {
+        ws.send(JSON.stringify({
+          type: 'claim_season_result',
+          success: false,
+          message: 'Nincs elég kupád ehhez a szinthez!'
+        }));
+        return;
+      }
+      if (!p.claimedTiers) p.claimedTiers = [];
+      if (p.claimedTiers.includes(tierNum)) {
+        ws.send(JSON.stringify({
+          type: 'claim_season_result',
+          success: false,
+          message: 'Ezt a jutalmat már kiváltottad!'
+        }));
+        return;
+      }
+      p.claimedTiers.push(tierNum);
+      savePlayers();
+      ws.send(JSON.stringify({
+        type: 'claim_season_result',
+        success: true,
+        tier: tierNum,
+        reward: tierDef
+      }));
+      break;
+    }
+
+    // --- MATCHMAKING SEARCH MODE ---
     case 'find_match': {
       const playerId = data.playerId || 'player_' + Math.random().toString(36).substr(2, 9);
       const playerName = data.name || 'Harcos';
@@ -288,8 +402,10 @@ function handleMessage(ws, data) {
       ws.playerId = playerId;
       const profile = getOrCreatePlayer(playerId, playerName, cups);
 
+      // Remove any existing entry for this socket or playerId
       matchmakingQueue = matchmakingQueue.filter(p => p.ws !== ws && p.playerId !== playerId);
 
+      // Add to search queue
       matchmakingQueue.push({
         ws,
         playerId,
@@ -310,6 +426,7 @@ function handleMessage(ws, data) {
         cups: profile.cups
       }));
 
+      // Immediate match check
       processMatchmaking();
       break;
     }
@@ -319,9 +436,11 @@ function handleMessage(ws, data) {
       ws.send(JSON.stringify({
         type: 'search_canceled'
       }));
+      console.log(`[Queue] Player canceled search. Queue size: ${matchmakingQueue.length}`);
       break;
     }
 
+    // --- CODE-BASED PRIVATE ROOM MODE ---
     case 'create_room': {
       cleanExpiredRooms();
       const code = generateRoomCode();
@@ -355,6 +474,7 @@ function handleMessage(ws, data) {
         role: 'host',
         myCups: profile.cups
       }));
+      console.log(`Room created: ${code} by ${profile.name}`);
       break;
     }
 
@@ -389,6 +509,7 @@ function handleMessage(ws, data) {
       ws.isHost = false;
       ws.playerId = playerId;
 
+      // Notify host
       if (room.host.readyState === WebSocket.OPEN) {
         room.host.send(JSON.stringify({
           type: 'match_start',
@@ -403,6 +524,7 @@ function handleMessage(ws, data) {
         }));
       }
 
+      // Notify guest
       ws.send(JSON.stringify({
         type: 'match_start',
         isMatchmaking: false,
@@ -414,16 +536,19 @@ function handleMessage(ws, data) {
         myCups: room.guestCups,
         arena: room.arena
       }));
+
+      console.log(`Player joined room ${code}: ${room.guestName} vs ${room.hostName}`);
       break;
     }
 
+    // --- MATCH RESULT & CUPS PROGRESSION ---
     case 'match_end': {
       if (!ws.roomCode || !rooms[ws.roomCode]) return;
       const room = rooms[ws.roomCode];
-      if (room.ended) return;
+      if (room.ended) return; // avoid duplicate resolution
       room.ended = true;
 
-      const winnerRole = data.winnerRole;
+      const winnerRole = data.winnerRole; // 'host', 'guest', or 'draw'
       const isHostWinner = winnerRole === 'host';
       const isDraw = winnerRole === 'draw';
 
@@ -480,6 +605,7 @@ function handleMessage(ws, data) {
       break;
     }
 
+    // --- GAMEPLAY SYNC ---
     case 'deploy_card': {
       if (!ws.roomCode || !rooms[ws.roomCode]) return;
       const room = rooms[ws.roomCode];
@@ -544,6 +670,7 @@ function handleMessage(ws, data) {
 server.listen(PORT, () => {
   console.log(`=========================================`);
   console.log(` Animal Clash Server running on port ${PORT}`);
+  console.log(` Matchmaking & Cups progression enabled`);
   console.log(` http://localhost:${PORT}`);
   console.log(`=========================================`);
 });

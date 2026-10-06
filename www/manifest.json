@@ -1,18 +1,41 @@
 {
+  "id": "com.allatiarena.game",
   "name": "Állati Aréna - Animal Clash",
   "short_name": "Állati Aréna",
-  "description": "Clash Royale stílusú kártyajáték állatokkal",
+  "description": "Clash Royale stílusú valós idejű multiplayer kártyajáték aranyos állatokkal",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#5a3515",
   "theme_color": "#8a5a2b",
+  "categories": ["games", "entertainment", "strategy"],
   "icons": [
     {
       "src": "icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Csata",
+      "short_name": "Csata",
+      "description": "Indíts meccset azonnal",
+      "url": "./index.html#battle"
+    },
+    {
+      "name": "Pakli",
+      "short_name": "Pakli",
+      "description": "Kártyák és fejlesztések",
+      "url": "./index.html#deck"
+    },
+    {
+      "name": "Bolt",
+      "short_name": "Bolt",
+      "description": "Napi ajánlatok és ládák",
+      "url": "./index.html#shop"
     }
   ]
 }

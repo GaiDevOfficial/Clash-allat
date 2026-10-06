@@ -35,7 +35,7 @@ button { font-family: inherit; cursor: pointer; border: none; -webkit-tap-highli
 #app {
   position: relative;
   width: 100%;
-  max-width: 640px;
+  max-width: 480px;
   height: 100%;
   height: 100dvh;
   display: flex;
@@ -43,10 +43,6 @@ button { font-family: inherit; cursor: pointer; border: none; -webkit-tap-highli
   background: #f3e3bd;
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.35);
   overflow: hidden;
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
 }
 
 /* ---------- Top bar ---------- */
@@ -54,11 +50,15 @@ button { font-family: inherit; cursor: pointer; border: none; -webkit-tap-highli
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 12px;
+  gap: 8px;
+  padding: 10px 12px 10px;
+  padding-top: max(10px, env(safe-area-inset-top, 0px));
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
   background: var(--wood);
-  border-bottom: 5px solid var(--wood-dark);
+  border-bottom: 4px solid var(--wood-dark);
   color: var(--cream);
+  flex-shrink: 0;
 }
 .top-bar h1 { font-size: 26px; letter-spacing: 1px; text-shadow: 2px 2px 0 var(--wood-dark); }
 .logo { display: flex; align-items: center; gap: 10px; }
@@ -74,8 +74,43 @@ button { font-family: inherit; cursor: pointer; border: none; -webkit-tap-highli
 .gold-pill.gem-pill { color: #55efc4; }
 .gold-pill.gem-pill .icon { color: #2ed573; }
 
+/* Header action buttons (sound, fullscreen) */
+.header-actions { display: flex; align-items: center; gap: 4px; margin-left: 4px; }
+.header-icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  background: var(--wood-dark); border-radius: 50%;
+  padding: 0; border: 2px solid rgba(255,255,255,0.15);
+  transition: background 0.15s, transform 0.1s;
+}
+.header-icon-btn .icon { width: 20px; height: 20px; color: var(--cream); }
+.header-icon-btn:hover { background: #7a4a1e; transform: scale(1.1); }
+.header-icon-btn:active { transform: scale(0.95); }
+
+/* PWA Install Banner (injected by web-controls.js) */
+.pwa-install-pill {
+  display: flex; align-items: center; gap: 6px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff; font-weight: bold; font-size: 13px;
+  padding: 6px 14px; border-radius: 20px;
+  border: 2px solid rgba(255,255,255,0.3);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  animation: pwa-bounce 2s ease-in-out infinite;
+  margin-left: 6px;
+}
+.pwa-install-pill:hover { filter: brightness(1.1); }
+@keyframes pwa-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
 /* ---------- Pages ---------- */
-#content { flex: 1; overflow-y: auto; padding: 16px; }
+#content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 14px 44px;
+  -webkit-overflow-scrolling: touch;
+}
 .tab-page { display: none; }
 .tab-page.active { display: block; }
 
@@ -123,11 +158,15 @@ button { font-family: inherit; cursor: pointer; border: none; -webkit-tap-highli
 #arena-preview {
   display: block;
   margin: 0 auto;
-  height: 42vh;
-  border: 4px solid var(--wood-dark);
+  height: clamp(130px, 20vh, 195px);
+  max-height: 200px;
+  width: auto;
+  max-width: 100%;
+  border: 3px solid var(--wood-dark);
   border-radius: 12px;
+  object-fit: contain;
 }
-.arena-card h2 { font-size: 30px; margin-top: 6px; }
+.arena-card h2 { font-size: 24px; margin-top: 4px; }
 
 /* Deck builder: 3-column card grid */
 .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 10px; margin-bottom: 22px; }
@@ -234,7 +273,12 @@ button { font-family: inherit; cursor: pointer; border: none; -webkit-tap-highli
 
 /* Lobby chests */
 .chest-title { text-align: center; margin: 22px 0 10px; font-size: 22px; }
-.chest-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.chest-slots {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 24px;
+}
 .chest-slot {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   min-height: 108px; padding: 6px 4px;
@@ -269,7 +313,11 @@ button { font-family: inherit; cursor: pointer; border: none; -webkit-tap-highli
 .tab-bar {
   display: flex;
   background: var(--wood);
-  border-top: 5px solid var(--wood-dark);
+  border-top: 4px solid var(--wood-dark);
+  padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(0px, env(safe-area-inset-left, 0px));
+  padding-right: max(0px, env(safe-area-inset-right, 0px));
+  flex-shrink: 0;
 }
 .tab {
   flex: 1;
@@ -303,50 +351,80 @@ button { font-family: inherit; cursor: pointer; border: none; -webkit-tap-highli
 
 .hand {
   background: var(--wood);
-  border-top: 5px solid var(--wood-dark);
-  padding: 8px 12px 12px;
+  border-top: 4px solid var(--wood-dark);
+  padding: 6px 8px max(8px, env(safe-area-inset-bottom, 0px));
+  width: 100%;
+  box-sizing: border-box;
 }
-.feed-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.feed-icon { width: 30px; height: 30px; }
+.feed-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.feed-icon { width: 26px; height: 26px; }
 .feed-track {
-  flex: 1; height: 16px;
+  flex: 1; height: 14px;
   background: #4a2c12; border: 2px solid var(--wood-dark); border-radius: 10px; overflow: hidden;
 }
 #feed-fill { height: 100%; width: 50%; background: linear-gradient(#ffe07a, #e8a51f); }
-#feed-count { color: var(--cream); font-size: 22px; font-weight: bold; min-width: 24px; text-align: center; }
+#feed-count { color: var(--cream); font-size: 20px; font-weight: bold; min-width: 22px; text-align: center; }
 
-#hand-cards { display: flex; gap: 8px; justify-content: center; align-items: flex-end; }
+#hand-cards {
+  display: flex;
+  gap: 5px;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 100%;
+}
 .next-card {
+  flex: 0 0 auto;
   display: flex; flex-direction: column; align-items: center; gap: 2px;
-  margin-right: 6px;
-  color: var(--cream); font-size: 11px; font-weight: bold;
+  margin-right: 4px;
+  color: var(--cream); font-size: 10px; font-weight: bold;
 }
 .next-card canvas {
-  width: 44px; height: 44px;
-  background: var(--cream); border: 3px solid var(--wood-dark); border-radius: 10px;
+  width: clamp(34px, 8.5vw, 42px);
+  height: clamp(34px, 8.5vw, 42px);
+  background: var(--cream); border: 2px solid var(--wood-dark); border-radius: 8px;
   opacity: 0.85;
 }
 .hand-card {
   position: relative;
-  width: 80px; height: 98px;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 76px;
+  height: clamp(74px, 12vh, 92px);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   background: var(--cream);
   border: 3px solid var(--wood-dark);
-  border-radius: 12px;
-  box-shadow: 0 4px 0 var(--wood-dark);
+  border-radius: 10px;
+  box-shadow: 0 3px 0 var(--wood-dark);
   transition: transform 0.1s;
+  padding: 2px 1px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
-.hand-card canvas { width: 60px; height: 60px; }
-.hand-card .hand-name { font-size: 12px; font-weight: bold; color: var(--wood-dark); }
-.hand-card.selected { transform: translateY(-10px); background: #fff1b8; border-color: #e8791f; }
+.hand-card canvas {
+  width: clamp(36px, 9.5vw, 52px);
+  height: clamp(36px, 9.5vw, 52px);
+}
+.hand-card .hand-name {
+  font-size: clamp(9px, 2.5vw, 11px);
+  font-weight: bold;
+  color: var(--wood-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 96%;
+  text-align: center;
+  margin-top: 1px;
+}
+.hand-card.selected { transform: translateY(-8px); background: #fff1b8; border-color: #e8791f; }
 .hand-card.too-expensive { filter: grayscale(0.8) brightness(0.8); }
 .hand-card.locked { background: #c9b99a; cursor: default; }
-.hand-card.locked .icon { width: 40px; height: 40px; }
+.hand-card.locked .icon { width: 32px; height: 32px; }
 .cost-badge {
-  position: absolute; top: -8px; left: -8px;
-  width: 26px; height: 26px; line-height: 20px;
-  background: var(--gold); border: 3px solid #7a5a10; border-radius: 50%;
-  font-weight: bold; color: #5a3a10; font-size: 14px;
+  position: absolute; top: -6px; left: -6px;
+  width: 22px; height: 22px; line-height: 18px;
+  background: var(--gold); border: 2px solid #7a5a10; border-radius: 50%;
+  font-weight: bold; color: #5a3a10; font-size: 12px;
+  text-align: center;
 }
 
 /* Result popup */
@@ -446,15 +524,14 @@ button { font-family: inherit; cursor: pointer; border: none; -webkit-tap-highli
 .arena-entry .arena-cards-title { margin-top: 0; }
 
 /* ---------- Wooden scrollbars ---------- */
-* { scrollbar-width: thin; scrollbar-color: var(--wood) rgba(90, 53, 21, 0.15); }
-::-webkit-scrollbar { width: 12px; height: 12px; }
-::-webkit-scrollbar-track { background: rgba(90, 53, 21, 0.15); border-radius: 6px; }
+* { scrollbar-width: thin; scrollbar-color: rgba(138, 90, 43, 0.45) transparent; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(90deg, #b27a3f, var(--wood));
-  border: 2px solid var(--wood-dark);
-  border-radius: 6px;
+  background: rgba(138, 90, 43, 0.5);
+  border-radius: 4px;
 }
-::-webkit-scrollbar-thumb:hover { background: linear-gradient(90deg, #c68a4c, #9a6a3a); }
+::-webkit-scrollbar-thumb:hover { background: rgba(138, 90, 43, 0.85); }
 .arena-no-cards { font-size: 13px; font-style: italic; opacity: 0.75; }
 
 /* ---------- Deck Presets & Stats ---------- */
@@ -540,6 +617,12 @@ button { font-family: inherit; cursor: pointer; border: none; -webkit-tap-highli
   transition: all 0.2s ease;
 }
 
+.mp-toggle-btn .icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
 .mp-toggle-btn.active {
   background: linear-gradient(180deg, #ffc93c, #ff9f1c);
   color: #2c1a0e;
@@ -595,6 +678,15 @@ button { font-family: inherit; cursor: pointer; border: none; -webkit-tap-highli
   gap: 6px;
   font-size: 12px;
   color: #ddd;
+}
+
+.mp-league-badge {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fffae8;
+  opacity: 0.95;
 }
 
 .mp-search-btn {
@@ -1037,5 +1129,339 @@ button { font-family: inherit; cursor: pointer; border: none; -webkit-tap-highli
   touch-action: none;
 }
 .hand-card {
-  touch-action: none;
+  touch-action: manipulation;
+}
+
+button, .action-btn, .big-btn, .tab, .card-tile, .chest-slot {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+button:active:not(:disabled), .action-btn:active:not(:disabled), .big-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* =========================================================
+   SEASON PASS & LOBBY WIDGET STYLES
+   ========================================================= */
+.season-lobby-card {
+  background: linear-gradient(135deg, #2d3748, #1a202c);
+  border: 3px solid #f6ad55;
+  border-radius: 16px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  color: #fff;
+}
+
+.season-banner-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.season-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.season-badge {
+  font-size: 26px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+}
+
+.season-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.season-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fbd38d;
+  letter-spacing: 0.3px;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+}
+
+.season-timer {
+  font-size: 11px;
+  color: #cbd5e0;
+}
+.season-timer b {
+  color: #fed7aa;
+}
+
+.season-pass-btn {
+  position: relative;
+  background: linear-gradient(180deg, #f6ad55, #dd6b20);
+  border: 2px solid #fff;
+  border-radius: 12px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  box-shadow: 0 3px 0 #9c4221, 0 4px 8px rgba(0,0,0,0.3);
+  text-shadow: 1px 1px 0 #7b341e;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.season-pass-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #9c4221;
+}
+
+.season-claim-dot {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #e53e3e;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  border-radius: 50%;
+  text-align: center;
+  border: 2px solid #fff;
+  animation: pulse-dot 1s infinite alternate;
+}
+
+@keyframes pulse-dot {
+  from { transform: scale(1); }
+  to { transform: scale(1.15); box-shadow: 0 0 8px #e53e3e; }
+}
+
+.season-banner-sub {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.season-boost-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fef08a;
+  background: rgba(234, 179, 8, 0.2);
+  padding: 3px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(234, 179, 8, 0.4);
+  white-space: nowrap;
+}
+
+.season-progress-bar-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.season-bar-track {
+  flex: 1;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.season-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ecc94b, #f6ad55);
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.season-bar-text {
+  font-size: 11px;
+  font-weight: 800;
+  color: #fbd38d;
+  white-space: nowrap;
+}
+
+/* Season Pass Modal */
+.season-modal-box {
+  max-width: 440px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+}
+
+.season-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 3px solid var(--wood-dark);
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+.season-modal-badge {
+  font-size: 38px;
+}
+
+.season-modal-head h3 {
+  font-size: 20px;
+  color: var(--wood-dark);
+}
+
+.season-modal-sub {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.season-cup-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fdf6e2;
+  border: 2px solid var(--wood-dark);
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.season-ladder-container {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 2px;
+}
+
+.season-tier-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  border: 3px solid var(--wood-dark);
+  border-radius: 12px;
+  box-shadow: 0 3px 0 var(--wood-dark);
+  transition: all 0.15s;
+}
+
+.season-tier-item.ready {
+  background: #fefce8;
+  border-color: #ca8a04;
+  box-shadow: 0 0 10px rgba(234, 179, 8, 0.4), 0 3px 0 var(--wood-dark);
+}
+
+.season-tier-item.claimed {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  opacity: 0.8;
+}
+
+.season-tier-item.locked {
+  background: #f8fafc;
+  opacity: 0.9;
+}
+
+.season-tier-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 50px;
+}
+.season-tier-badge .tier-num {
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+}
+.season-tier-badge .tier-cups {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--wood-dark);
+}
+
+.season-tier-mid {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.season-reward-icon-wrap {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.season-reward-icon-wrap .icon {
+  width: 28px;
+  height: 28px;
+}
+
+.season-reward-info .reward-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--wood-dark);
+}
+.season-reward-info .reward-desc {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.season-claim-btn {
+  background: linear-gradient(180deg, #22c55e, #16a34a);
+  border: 2px solid #fff;
+  border-radius: 10px;
+  color: #fff;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 3px 0 #15803d, 0 0 8px rgba(34, 197, 94, 0.5);
+  animation: pulse-claim 1.2s infinite alternate;
+}
+.season-claim-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #15803d;
+}
+
+@keyframes pulse-claim {
+  from { transform: scale(1); }
+  to { transform: scale(1.05); }
+}
+
+.season-status-claimed {
+  font-size: 11px;
+  font-weight: 800;
+  color: #16a34a;
+}
+.season-status-locked {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 400px) {
+  .top-bar h1 { font-size: 18px; }
+  .gold-pill { font-size: 13px; padding: 3px 7px 3px 4px; }
+  .gold-pill .icon { width: 18px; height: 18px; }
+  .pills { gap: 4px; }
+  .header-icon-btn { width: 30px; height: 30px; }
+  .header-icon-btn .icon { width: 16px; height: 16px; }
+  .logo-icon { width: 26px; height: 26px; }
+}
+@media (max-width: 340px) {
+  #btn-fullscreen-toggle { display: none; }
+  .top-bar h1 { font-size: 16px; }
 }

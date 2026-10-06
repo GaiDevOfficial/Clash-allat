@@ -22,9 +22,9 @@ const SHOP_CHEST_PRICES = {
 const SPECIAL_BUNDLES = {
   venomous_reptile: {
     id: 'venomous_reptile',
-    name: 'Venomous Reptile Starter Pack',
-    badge: 'HOT DEAL -50%',
-    desc: 'Unleash the deadly Snake! Slithers past frontlines with persistent poison DoT.',
+    name: 'Mérges Kígyó Kezdőcsomag',
+    badge: 'SZUPER AJÁNLAT -50%',
+    desc: 'Szabadítsd el a halálos Kígyót! Átsiklik a védőkön folyamatos méreggel.',
     costGems: 60,
     costGold: 0,
     rewards: {
@@ -36,9 +36,9 @@ const SPECIAL_BUNDLES = {
   },
   amphibian_invasion: {
     id: 'amphibian_invasion',
-    name: 'Amphibian Invasion Bundle',
-    badge: 'POPULAR PACK',
-    desc: 'Master the river leap with the Frog & stun groups with the Electric Eel!',
+    name: 'Kétéltű Invázió Csomag',
+    badge: 'NÉPSZERŰ CSOMAG',
+    desc: 'Ugorj át a folyón a Békával, és bénítsd le a sereget az Elektromos Angolnával!',
     costGems: 140,
     costGold: 0,
     rewards: {
@@ -50,9 +50,9 @@ const SPECIAL_BUNDLES = {
   },
   legendary_jungle: {
     id: 'legendary_jungle',
-    name: 'Legendary Jungle Bundle',
-    badge: 'LEGENDARY VALUE',
-    desc: 'Dominate the arena with Gorilla, Cheetah, Falcon, and Honey Badger!',
+    name: 'Legendás Dzsungel Csomag',
+    badge: 'LEGENDÁS ÉRTÉK',
+    desc: 'Urald az arénát az Ezüsthátú Gorillával, Gepárddal, Sólyommal és Méhészborzzal!',
     costGems: 260,
     costGold: 0,
     rewards: {
@@ -260,10 +260,10 @@ function renderSpecialBundles() {
         <div class="bundle-contents">
           <span class="pill gold"><span class="icon" data-icon="gold"></span> +${b.rewards.gold}</span>
           <span class="pill gem"><span class="icon" data-icon="gem"></span> +${b.rewards.gems}</span>
-          <span class="pill chest"><span class="icon" data-icon="chest_${b.rewards.chest.type}"></span> Chest</span>
+          <span class="pill chest"><span class="icon" data-icon="chest_${b.rewards.chest.type}"></span> Láda</span>
         </div>
         <button class="big-btn bundle-buy-btn" data-bundle="${key}" ${canAfford ? '' : 'disabled'}>
-          <span class="icon" data-icon="gem"></span> ${b.costGems} Gems
+          <span class="icon" data-icon="gem"></span> ${b.costGems} Drágakő
         </button>
       </div>
     `;
@@ -279,11 +279,11 @@ function renderDailyFreeGift() {
   return `
     <div class="daily-gift-banner">
       <div class="daily-gift-info">
-        <h4>🎁 Napi Ajándék / Daily Free Reward</h4>
-        <p>+25 Gems & +200 Gold every 24 hours!</p>
+        <h4>🎁 Napi Ingyenes Ajándék</h4>
+        <p>+25 Drágakő és +200 Arany 24 óránként!</p>
       </div>
       <button class="action-btn claim-daily-btn" ${canClaim ? '' : 'disabled'}>
-        ${canClaim ? 'Átveszem! (Claim)' : 'Később nyitható'}
+        ${canClaim ? 'Átveszem!' : 'Később nyitható'}
       </button>
     </div>
   `;
@@ -298,14 +298,14 @@ function renderShop() {
   const canRefresh = save.gold >= refreshPrice;
 
   root.innerHTML = `
-    <h2 class="page-title">Bolt / Shop & Bundles</h2>
+    <h2 class="page-title">Bolt & Csomagok</h2>
 
     ${renderDailyFreeGift()}
 
-    <h3 class="shop-section-title">🔥 Különleges Csomagok (Featured Bundles)</h3>
+    <h3 class="shop-section-title">🔥 Különleges Csomagok</h3>
     ${renderSpecialBundles()}
 
-    <h3 class="shop-section-title">⏰ Napi Kártya Ajánlatok (Hourly Card Rotation)</h3>
+    <h3 class="shop-section-title">⏰ Napi Kártya Ajánlatok (Óránként új)</h3>
     <div class="shop-timer-row">
       <p class="shop-timer">Új ajánlatok: <b id="shop-countdown">${formatShopTime(timeUntilNextShop())}</b></p>
       <button class="action-btn shop-refresh" ${canRefresh ? '' : 'disabled title="Nincs elég aranyad"'}>
@@ -314,7 +314,7 @@ function renderShop() {
     </div>
     <div class="card-grid shop-grid"></div>
 
-    <h3 class="shop-section-title">📦 Kártyaládák (Chests)</h3>
+    <h3 class="shop-section-title">📦 Kártyaládák</h3>
     <p class="shop-chest-hint">Azonnal kinyílnak látványos animációval!</p>
     <div class="card-grid shop-chest-grid"></div>
   `;

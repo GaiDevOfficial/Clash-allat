@@ -192,8 +192,10 @@ function drawBridge(g, lx) {
   const top = ARENA.riverTop - 10;
   const h = ARENA.riverBottom - ARENA.riverTop + 20;
 
-  // Shadow on the water
-  g.fillStyle = 'rgba(0,0,0,0.2)';
+  // Depth shadow on the water
+  g.fillStyle = 'rgba(8, 20, 35, 0.22)';
+  g.fillRect(lx - w / 2 + 5, top + 5, w, h);
+  g.fillStyle = 'rgba(4, 10, 20, 0.35)';
   g.fillRect(lx - w / 2 + 3, top + 3, w, h);
 
   // Planks
@@ -228,7 +230,9 @@ function drawLogBridge(g, lx) {
   const r = logH / 2;           // radius of a log's round end
 
   // Shadow on the water, then a dark backing that shows as thin gaps between the logs
-  g.fillStyle = 'rgba(0,0,0,0.25)';
+  g.fillStyle = 'rgba(8, 20, 35, 0.22)';
+  g.fillRect(lx - w / 2 + 5, top + 5, w, h);
+  g.fillStyle = 'rgba(4, 10, 20, 0.35)';
   g.fillRect(lx - w / 2 + 3, top + 3, w, h);
   g.fillStyle = '#4f3218';
   g.fillRect(lx - w / 2, top, w, h);
@@ -271,8 +275,13 @@ function drawHayBales(g) {
 
 // A single square hay bale with a soft shadow and two binding strings
 function drawHayBale(g, x, y) {
-  g.fillStyle = 'rgba(0,0,0,0.2)';
+  // Soft layered shadow
+  g.fillStyle = 'rgba(10, 20, 5, 0.16)';
+  ellipse(g, x + 1, y + 10, 18, 5.5); g.fill();
+  g.fillStyle = 'rgba(5, 12, 3, 0.28)';
   ellipse(g, x, y + 9, 14, 4); g.fill();
+  g.fillStyle = 'rgba(2, 6, 1, 0.38)';
+  ellipse(g, x, y + 8, 9, 2.5); g.fill();
   g.fillStyle = '#ecc75a';
   g.strokeStyle = '#a8801f';
   g.lineWidth = 2;
